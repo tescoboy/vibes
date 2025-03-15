@@ -197,7 +197,7 @@ function toggleHallView() {
     displayPlays(isShameView ? 'hallOfFame' : 'hallOfShame');
 }
 
-// Function to display plays
+// Function to display plays - make it globally accessible
 async function displayPlays(section = 'all') {
     console.log("displayPlays called with section:", section);
     const playGrid = document.querySelector('.play-grid');
@@ -207,17 +207,48 @@ async function displayPlays(section = 'all') {
     // Hide the add play form
     if (addPlayForm) addPlayForm.style.display = 'none';
     
-    // Update active nav links - with null checks
+    // Special case for dashboard
+    if (section === 'dashboard') {
+        if (playGrid) playGrid.innerHTML = ''; // Clear existing content
+        if (calendarContainer) calendarContainer.style.display = 'none';
+        
+        // Update active nav - set dashboard link active
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        const dashboardLink = document.getElementById('dashboardLink');
+        if (dashboardLink) dashboardLink.classList.add('active');
+        
+        // Directly call the dashboard function
+        await displayDashboard();
+        return; // Exit early - dashboard rendering is complete
+    }
+    
+    // Special case for calendar section
+    if (section === 'calendar') {
+        if (playGrid) playGrid.style.display = 'none';
+        if (calendarContainer) calendarContainer.style.display = 'block';
+        
+        // Update nav links
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        const calendarLink = document.getElementById('calendarLink');
+        if (calendarLink) calendarLink.classList.add('active');
+        
+        // Display the calendar content (handled by separate calendar.js)
+        return;
+    }
+    
+    // Rest of the displayPlays function proceeds as normal for regular sections
+    // Update active nav links
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
     });
     
     try {
-        // Set active nav with null checks
-        if (section === 'dashboard') {
-            const dashboardLink = document.getElementById('dashboardLink');
-            if (dashboardLink) dashboardLink.classList.add('active');
-        } else if (section === 'hallOfShame') {
+        // Set active nav
+        if (section === 'hallOfShame') {
             const hallOfFameLink = document.getElementById('hallOfFamePlaysLink');
             if (hallOfFameLink) hallOfFameLink.classList.add('active');
         } else {
@@ -226,23 +257,22 @@ async function displayPlays(section = 'all') {
         }
     } catch (e) {
         console.error("Error updating navigation:", e);
-        // Continue with the function even if navigation update fails
     }
 
-    // Show/hide relevant toggles
-    const calendarToggle = document.querySelector('.calendar-toggle');
+    // Show/hide hall toggle if needed
     const hallToggle = document.querySelector('.hall-toggle');
-    if (calendarToggle) {
-        calendarToggle.style.display = 'none'; // Hide calendar toggle since we have a dedicated Calendar section
-    }
     if (hallToggle) {
         hallToggle.style.display = (section === 'hallOfFame' || section === 'hallOfShame') ? 'block' : 'none';
     }
 
-    // Ensure play grid is visible
+    // Ensure play grid is visible and calendar is hidden
     if (playGrid) playGrid.style.display = 'grid';
+    if (calendarContainer) calendarContainer.style.display = 'none';
 
     try {
+        // Empty the play grid before adding new content
+        if (playGrid) playGrid.innerHTML = '';
+        
         let plays;
         switch(section) {
             case 'upcoming':
@@ -266,24 +296,13 @@ async function displayPlays(section = 'all') {
             return;
         }
 
-        if ((section === 'upcoming' || section === 'seen') && isCalendarView) {
-            if (playGrid) playGrid.style.display = 'none';
-            if (calendarContainer) {
-                calendarContainer.style.display = 'block';
-                renderCalendar(plays);
-            }
-        } else {
-            if (playGrid) {
-                playGrid.style.display = 'grid';
-                plays.forEach(play => {
-                    const playCard = (section === 'hallOfFame' || section === 'hallOfShame') ? 
-                        createHallOfFameCard(play, section === 'hallOfShame') : 
-                        createPlayCard(play);
-                    playGrid.appendChild(playCard);
-                });
-            }
-            if (calendarContainer) calendarContainer.style.display = 'none';
-        }
+        // Always use grid view for regular sections
+        plays.forEach(play => {
+            const playCard = (section === 'hallOfFame' || section === 'hallOfShame') ? 
+                createHallOfFameCard(play, section === 'hallOfShame') : 
+                createPlayCard(play);
+            playGrid.appendChild(playCard);
+        });
 
     } catch (error) {
         console.error('Error displaying plays:', error);
@@ -883,229 +902,323 @@ editIconStyles.textContent = `
 `;
 document.head.appendChild(editIconStyles);
 
-// Placeholder function for edit action
+// Function to edit a play - completely new approach with iframe
 function editPlay(playId) {
-    console.log(`Editing play with ID: ${playId}`);
-    createModalOverlay(playId);
-}
-
-// Function to create modal overlay
-async function createModalOverlay(playId) {
-    // Fetch play data first
-    const { data: play, error } = await supabaseClient
-        .from('plays')
-        .select('*')
-        .eq('id', playId)
-        .single();
+    console.log('Editing play with ID:', playId);
     
-    if (error) {
-        console.error('Error fetching play:', error);
-        return;
-    }
+    // Remove any existing modals
+    const existingModals = document.querySelectorAll('.modal-overlay, .edit-modal-iframe-container');
+    existingModals.forEach(modal => {
+        if (modal && modal.parentNode) {
+            document.body.removeChild(modal);
+        }
+    });
     
-    console.log("Play data for editing:", play); // Debug log to see what we're working with
+    // Create a modal container that's positioned absolutely
+    const modalContainer = document.createElement('div');
+    modalContainer.className = 'edit-modal-iframe-container';
+    modalContainer.style.cssText = `
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background-color: rgba(0, 0, 0, 0.8) !important;
+        z-index: 99999 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    `;
     
-    // Format the date properly - extract just the YYYY-MM-DD part
-    let formattedDate = '';
-    if (play.date) {
-        // Handle both ISO string format and plain date format
-        formattedDate = play.date.includes('T') ? 
-            play.date.split('T')[0] : 
-            play.date;
-    }
-    console.log("Formatted date for input:", formattedDate);
-    
-    // Create modal overlay
-    const modalOverlay = document.createElement('div');
-    modalOverlay.className = 'modal-overlay';
-    
-    // Create modal content
-    modalOverlay.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Edit Play</h2>
-                <button class="modal-close-btn">×</button>
-            </div>
-            <div class="modal-body">
-                <form id="editPlayForm">
-                    <input type="hidden" id="editPlayId" value="${play.id}">
-                    
-                    <div class="form-group">
-                        <label for="editPlayName">Play Name *</label>
-                        <input type="text" id="editPlayName" name="editPlayName" value="${play.name || ''}" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="editPlayDate">Date *</label>
-                        <input type="date" id="editPlayDate" name="editPlayDate" value="${formattedDate}" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="editPlayTheatre">Theatre</label>
-                        <input type="text" id="editPlayTheatre" name="editPlayTheatre" value="${play.theatre || ''}">
-                    </div>
-
-                    <div class="form-group">
-                        <label>Rating</label>
-                        <div class="edit-rating-container">
-                            <!-- The createEditMoonRating function will fill this container -->
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="editPlayImage">Image URL</label>
-                        <input type="url" id="editPlayImage" name="editPlayImage" value="${play.image || ''}" placeholder="https://...">
-                        <div class="image-preview" style="${play.image ? `background-image: url(${play.image}); background-size: cover; background-position: center; color: transparent;` : ''}">${play.image ? '' : 'Image preview will appear here'}</div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" class="save-btn">Save Changes</button>
-                        <button type="button" class="delete-btn">Delete Play</button>
-                        <button type="button" class="cancel-btn">Cancel</button>
-                    </div>
-                </form>
+    // Create a simple editor with loading state
+    modalContainer.innerHTML = `
+        <div class="editor-popup" style="
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        ">
+            <h2 style="margin-top: 0;">Edit Play</h2>
+            <p>Loading play information...</p>
+            <div class="editor-controls" style="text-align: center;">
+                <button id="closeEditorBtn" style="
+                    background-color: #f44336;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                ">Close</button>
             </div>
         </div>
     `;
     
-    // Add modal to body
-    document.body.appendChild(modalOverlay);
+    // Add the container to the page
+    document.body.appendChild(modalContainer);
     
-    // Show modal with animation
-    setTimeout(() => {
-        modalOverlay.classList.add('active');
-    }, 10);
+    // Setup close button
+    document.getElementById('closeEditorBtn').addEventListener('click', () => {
+        document.body.removeChild(modalContainer);
+    });
     
-    // Set the rating properly after DOM is attached
-    setTimeout(() => {
-        // Handle rating display
-        if (play.rating) {
-            if (play.rating === 'Standing Ovation') {
-                const standingOvationBtn = document.getElementById('editStandingOvation');
-                if (standingOvationBtn) {
-                    standingOvationBtn.classList.add('active');
-                    // Disable star ratings
-                    modalOverlay.querySelectorAll('.edit-rating input').forEach(input => {
-                        input.disabled = true;
-                    });
-                }
-            } else {
-                // Try to find and check the appropriate rating radio
-                const ratingStr = String(play.rating).replace('.0', ''); // Handle cases like '4.0' -> '4'
-                const ratingOptions = ['1', '1.5', '2', '2.5', '3', '3.5', '4', '4.5', '5'];
+    // Close on click outside the popup
+    modalContainer.addEventListener('click', (e) => {
+        if (e.target === modalContainer) {
+            document.body.removeChild(modalContainer);
+        }
+    });
+    
+    // Fetch the play data
+    dbClient
+        .from('plays')
+        .select('*')
+        .eq('id', playId)
+        .single()
+        .then(({ data, error }) => {
+            if (error) {
+                console.error('Error fetching play:', error);
+                modalContainer.querySelector('.editor-popup').innerHTML = `
+                    <h2 style="margin-top: 0;">Error</h2>
+                    <p>Failed to load play data: ${error.message}</p>
+                    <div class="editor-controls" style="text-align: center;">
+                        <button id="closeEditorBtn" style="
+                            background-color: #f44336;
+                            color: white;
+                            border: none;
+                            padding: 10px 20px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        ">Close</button>
+                    </div>
+                `;
                 
-                if (ratingOptions.includes(ratingStr)) {
-                    const ratingInput = document.getElementById(`editRating${ratingStr}`);
-                    if (ratingInput) {
-                        ratingInput.checked = true;
+                // Reattach close button event
+                document.getElementById('closeEditorBtn').addEventListener('click', () => {
+                    document.body.removeChild(modalContainer);
+                });
+                return;
+            }
+            
+            if (!data) {
+                console.error('Play not found');
+                modalContainer.querySelector('.editor-popup').innerHTML = `
+                    <h2 style="margin-top: 0;">Error</h2>
+                    <p>Play not found</p>
+                    <div class="editor-controls" style="text-align: center;">
+                        <button id="closeEditorBtn" style="
+                            background-color: #f44336;
+                            color: white;
+                            border: none;
+                            padding: 10px 20px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        ">Close</button>
+                    </div>
+                `;
+                
+                // Reattach close button event
+                document.getElementById('closeEditorBtn').addEventListener('click', () => {
+                    document.body.removeChild(modalContainer);
+                });
+                return;
+            }
+            
+            console.log('Play data fetched:', data);
+            
+            // Format date for input
+            const formattedDate = data.date ? data.date.split('T')[0] : '';
+            
+            // Update the popup with the form now that we have data
+            modalContainer.querySelector('.editor-popup').innerHTML = `
+                <h2 style="margin-top: 0;">Edit: ${data.name}</h2>
+                <form id="simpleEditForm" style="margin-bottom: 20px;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Name:</label>
+                        <input type="text" id="editName" value="${data.name || ''}" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Date:</label>
+                        <input type="date" id="editDate" value="${formattedDate}" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Theatre:</label>
+                        <input type="text" id="editTheatre" value="${data.theatre || ''}" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Rating:</label>
+                        <div class="edit-rating-container" style="margin-bottom: 10px;"></div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Image URL:</label>
+                        <input type="url" id="editImage" value="${data.image || ''}" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    </div>
+                </form>
+                <div class="editor-controls" style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                    <button id="saveEditBtn" style="
+                        background-color: #4CAF50;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    ">Save</button>
+                    <button id="clearRatingBtn" style="
+                        background-color: #888;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    ">Remove Rating</button>
+                    <button id="deleteEditBtn" style="
+                        background-color: #f44336;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    ">Delete</button>
+                    <button id="closeEditorBtn" style="
+                        background-color: #ccc;
+                        color: black;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    ">Cancel</button>
+                </div>
+            `;
+            
+            // Setup moon rating system
+            const ratingContainer = document.querySelector('.edit-rating-container');
+            const ratingControl = createEditMoonRating(ratingContainer, data.rating);
+            
+            // Add event handler for the clear rating button
+            document.getElementById('clearRatingBtn').addEventListener('click', () => {
+                console.log('Clearing rating');
+                if (ratingControl && typeof ratingControl.reset === 'function') {
+                    ratingControl.reset();
+                }
+            });
+            
+            // Set up the image preview
+            const imageInput = document.getElementById('editImage');
+            if (imageInput) {
+                const imagePreviewDiv = document.createElement('div');
+                imagePreviewDiv.style.cssText = `
+                    margin-top: 10px;
+                    max-width: 100%;
+                    text-align: center;
+                `;
+                imagePreviewDiv.innerHTML = `
+                    <img src="${data.image || 'https://placehold.co/400x300?text=No+Image'}" 
+                         alt="Preview" 
+                         style="max-width: 100%; max-height: 200px; object-fit: contain;">
+                `;
+                imageInput.parentNode.appendChild(imagePreviewDiv);
+                
+                imageInput.addEventListener('input', () => {
+                    const img = imagePreviewDiv.querySelector('img');
+                    if (img) {
+                        img.src = imageInput.value || 'https://placehold.co/400x300?text=No+Image';
+                    }
+                });
+            }
+            
+            // Reattach close button event
+            document.getElementById('closeEditorBtn').addEventListener('click', () => {
+                document.body.removeChild(modalContainer);
+            });
+            
+            // Handle save button
+            document.getElementById('saveEditBtn').addEventListener('click', async () => {
+                try {
+                    let ratingValue = null;
+                    if (ratingControl && typeof ratingControl.getValue === 'function') {
+                        ratingValue = ratingControl.getValue();
+                    }
+                    
+                    const updatedPlay = {
+                        name: document.getElementById('editName').value,
+                        date: document.getElementById('editDate').value,
+                        theatre: document.getElementById('editTheatre').value || null,
+                        rating: ratingValue || null,
+                        image: document.getElementById('editImage').value || null
+                    };
+                    
+                    console.log('Saving updated play:', updatedPlay);
+                    
+                    const { error } = await dbClient
+                        .from('plays')
+                        .update(updatedPlay)
+                        .eq('id', data.id);
+                        
+                    if (error) throw error;
+                    
+                    console.log('Play updated successfully');
+                    document.body.removeChild(modalContainer);
+                    
+                    // Force clear the current play grid before refreshing the display
+                    const playGrid = document.querySelector('.play-grid');
+                    if (playGrid) {
+                        playGrid.innerHTML = '';
+                    }
+                    
+                    // Refresh with a slight delay to ensure the modal is fully removed
+                    setTimeout(() => {
+                        console.log('Refreshing display after update');
+                        displayPlays('all');
+                    }, 100);
+                    
+                } catch (error) {
+                    console.error('Error updating play:', error);
+                    alert('Failed to update play: ' + error.message);
+                }
+            });
+            
+            // Enhanced delete button handler with proper refresh
+            document.getElementById('deleteEditBtn').addEventListener('click', async () => {
+                if (confirm('Are you sure you want to delete this play?')) {
+                    try {
+                        console.log('Deleting play with ID:', data.id);
+                        
+                        const { error } = await dbClient
+                            .from('plays')
+                            .delete()
+                            .eq('id', data.id);
+                            
+                        if (error) throw error;
+                        
+                        console.log('Play deleted successfully');
+                        
+                        // Remove the modal first
+                        document.body.removeChild(modalContainer);
+                        
+                        // Force clear the current play grid before refreshing the display
+                        const playGrid = document.querySelector('.play-grid');
+                        if (playGrid) {
+                            playGrid.innerHTML = '';
+                        }
+                        
+                        // Call displayPlays with a slight delay to ensure DOM updates have processed
+                        setTimeout(() => {
+                            console.log('Refreshing display after delete');
+                            displayPlays('all');
+                        }, 100);
+                        
+                    } catch (error) {
+                        console.error('Error deleting play:', error);
+                        alert('Failed to delete play: ' + error.message);
                     }
                 }
-            }
-        }
-    }, 50);
-    
-    // Close modal function
-    function closeModal() {
-        modalOverlay.classList.remove('active');
-        setTimeout(() => {
-            modalOverlay.remove();
-        }, 300); // Match transition duration
-    }
-    
-    // Setup event listeners
-    const closeBtn = modalOverlay.querySelector('.modal-close-btn');
-    const cancelBtn = modalOverlay.querySelector('.cancel-btn');
-    const deleteBtn = modalOverlay.querySelector('.delete-btn');
-    const editForm = modalOverlay.querySelector('#editPlayForm');
-    const imageInput = modalOverlay.querySelector('#editPlayImage');
-    const imagePreview = modalOverlay.querySelector('.image-preview');
-    const standingOvationBtn = modalOverlay.querySelector('#editStandingOvation');
-    
-    // Close modal events
-    closeBtn.addEventListener('click', closeModal);
-    cancelBtn.addEventListener('click', closeModal);
-    
-    // Close on outside click
-    modalOverlay.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) {
-            closeModal();
-        }
-    });
-    
-    // Image preview functionality
-    imageInput.addEventListener('input', () => {
-        const url = imageInput.value;
-        if (url && isValidUrl(url)) {
-            const img = new Image();
-            img.onload = () => {
-                imagePreview.style.backgroundImage = `url(${url})`;
-                imagePreview.style.backgroundSize = 'cover';
-                imagePreview.style.backgroundPosition = 'center';
-                imagePreview.textContent = '';
-            };
-            img.onerror = () => {
-                imagePreview.style.backgroundImage = 'none';
-                imagePreview.textContent = 'Invalid image URL';
-            };
-            img.src = url;
-        } else {
-            imagePreview.style.backgroundImage = 'none';
-            imagePreview.textContent = 'Image preview will appear here';
-        }
-    });
-    
-    // Standing ovation toggle
-    standingOvationBtn.addEventListener('click', () => {
-        const isActive = standingOvationBtn.classList.toggle('active');
-        modalOverlay.querySelectorAll('.edit-rating input').forEach(input => {
-            input.checked = false;
-            input.disabled = isActive;
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred');
         });
-    });
-    
-    // Handle form submission
-    editForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const submitBtn = modalOverlay.querySelector('.save-btn');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Saving...';
-        
-        try {
-            const selectedRating = modalOverlay.querySelector('input[name="editRating"]:checked');
-            let rating = null;
-            
-            if (standingOvationBtn.classList.contains('active')) {
-                rating = 'Standing Ovation';
-            } else if (selectedRating) {
-                rating = parseFloat(selectedRating.value);
-            }
-            
-            const updatedPlay = {
-                name: modalOverlay.querySelector('#editPlayName').value,
-                date: modalOverlay.querySelector('#editPlayDate').value,
-                theatre: modalOverlay.querySelector('#editPlayTheatre').value || null,
-                rating: rating,
-                image: modalOverlay.querySelector('#editPlayImage').value || null
-            };
-            
-            const { error } = await supabaseClient
-                .from('plays')
-                .update(updatedPlay)
-                .eq('id', play.id);
-                
-            if (error) throw error;
-            
-            closeModal();
-            displayPlays(document.querySelector('.nav-link.active').id.replace('PlaysLink', ''));
-        } catch (error) {
-            console.error('Error updating play:', error);
-            alert('Error updating play: ' + error.message);
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Save Changes';
-        }
-    });
 }
 
 // Add modal styles
@@ -1241,167 +1354,6 @@ modalStyles.textContent = `
 `;
 document.head.appendChild(modalStyles);
 
-// Add this function to display the dedicated calendar section
-async function displayCalendarSection() {
-    console.log("Displaying calendar section");
-    const playGrid = document.querySelector('.play-grid');
-    const calendarContainer = document.querySelector('.calendar-container');
-    
-    // Update active nav link
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-    });
-    document.getElementById('calendarLink').classList.add('active');
-    
-    // Hide play grid and show calendar
-    if (playGrid) playGrid.style.display = 'none';
-    if (calendarContainer) {
-        calendarContainer.style.display = 'block';
-        
-        // Fetch all plays for the calendar
-        try {
-            const plays = await fetchPlays();
-            if (plays && plays.length > 0) {
-                renderUnifiedCalendar(plays);
-            } else {
-                calendarContainer.innerHTML = '<p class="no-plays-message">No plays available to display on calendar</p>';
-            }
-        } catch (error) {
-            console.error('Error fetching plays for calendar:', error);
-            calendarContainer.innerHTML = '<p class="error-message">Error loading calendar</p>';
-        }
-    }
-}
-
-// Make sure this function exists and is modified to accept plays as a parameter if needed
-async function renderUnifiedCalendar(plays) {
-    const calendarContainer = document.querySelector('.calendar-container');
-    
-    // If plays parameter is not provided, fetch them
-    if (!plays) {
-        try {
-            plays = await fetchPlays();
-            if (!plays || plays.length === 0) {
-                calendarContainer.innerHTML = '<p>No plays available to display on calendar</p>';
-                return;
-            }
-        } catch (error) {
-            console.error('Error fetching plays for calendar:', error);
-            calendarContainer.innerHTML = '<p>Error loading calendar</p>';
-            return;
-        }
-    }
-    
-    // Calendar rendering code - using current implementation
-    // ... 
-    // Your existing calendar rendering code
-    const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    
-    // Generate calendar HTML
-    calendarContainer.innerHTML = `
-        <div class="calendar-header">
-            <div class="calendar-nav">
-                <button id="prevMonth">&lt; Previous</button>
-                <div class="calendar-month">${currentMonth.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</div>
-                <button id="nextMonth">Next &gt;</button>
-            </div>
-        </div>
-        <div class="calendar-grid">
-            <div class="calendar-day-header">Sun</div>
-            <div class="calendar-day-header">Mon</div>
-            <div class="calendar-day-header">Tue</div>
-            <div class="calendar-day-header">Wed</div>
-            <div class="calendar-day-header">Thu</div>
-            <div class="calendar-day-header">Fri</div>
-            <div class="calendar-day-header">Sat</div>
-        </div>
-    `;
-    
-    // Get calendar grid for adding days
-    const calendarGrid = calendarContainer.querySelector('.calendar-grid');
-    
-    // Add event listeners for navigation buttons
-    document.getElementById('prevMonth').addEventListener('click', () => {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        renderUnifiedCalendar(plays);
-    });
-    
-    document.getElementById('nextMonth').addEventListener('click', () => {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        renderUnifiedCalendar(plays);
-    });
-    
-    // Add days from previous month to fill first row
-    const firstDay = new Date(currentMonth).getDay();
-    const prevMonthLastDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate();
-    
-    for (let i = 0; i < firstDay; i++) {
-        const dayNum = prevMonthLastDay - firstDay + i + 1;
-        const dayDiv = document.createElement('div');
-        dayDiv.className = 'calendar-day other-month';
-        dayDiv.innerHTML = `<div class="calendar-day-number">${dayNum}</div>`;
-        calendarGrid.appendChild(dayDiv);
-    }
-    
-    // Add days for current month
-    const today = new Date();
-    for (let day = 1; day <= lastDay.getDate(); day++) {
-        const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        const isToday = date.getDate() === today.getDate() && 
-                       date.getMonth() === today.getMonth() && 
-                       date.getFullYear() === today.getFullYear();
-        
-        // Find plays for this day
-        const daysPlays = plays.filter(play => {
-            const playDate = new Date(play.date);
-            return playDate.getDate() === date.getDate() && 
-                   playDate.getMonth() === date.getMonth() && 
-                   playDate.getFullYear() === date.getFullYear();
-        });
-        
-        const dayDiv = document.createElement('div');
-        dayDiv.className = `calendar-day${isToday ? ' today' : ''}${daysPlays.length ? ' has-plays' : ''}`;
-        dayDiv.innerHTML = `<div class="calendar-day-number">${day}</div>`;
-        
-        // Add plays for this day
-        daysPlays.forEach(play => {
-            const now = new Date();
-            const playDate = new Date(play.date);
-            const isPastPlay = playDate < now;
-            
-            const playDiv = document.createElement('div');
-            playDiv.className = `calendar-play ${isPastPlay ? 'past-play' : 'upcoming-play'}`;
-            playDiv.innerHTML = `
-                <div class="play-title">${play.name}</div>
-                ${play.theatre ? `<div class="play-theatre">${play.theatre}</div>` : ''}
-                ${play.rating ? `<div class="play-rating">Rating: ${play.rating}</div>` : ''}
-            `;
-            
-            // Make the play card clickable
-            playDiv.addEventListener('click', () => {
-                editPlay(play.id);
-            });
-            
-            dayDiv.appendChild(playDiv);
-        });
-        
-        calendarGrid.appendChild(dayDiv);
-    }
-    
-    // Add days from next month to complete the grid
-    const daysAdded = firstDay + lastDay.getDate();
-    const remainingDays = 7 - (daysAdded % 7);
-    if (remainingDays < 7) {
-        for (let i = 1; i <= remainingDays; i++) {
-            const dayDiv = document.createElement('div');
-            dayDiv.className = 'calendar-day other-month';
-            dayDiv.innerHTML = `<div class="calendar-day-number">${i}</div>`;
-            calendarGrid.appendChild(dayDiv);
-        }
-    }
-}
-
 // Initialize the moon rating system
 function initMoonRating() {
     // For the Add Play form
@@ -1411,12 +1363,48 @@ function initMoonRating() {
     );
 }
 
-// Setup function for the moon rating system
+// Setup function for the moon rating system - updated for horizontal layout
 function setupMoonRating(container, hiddenInput) {
     console.log("Setting up moon rating", container, hiddenInput);
     
+    // Make the moon wrapper horizontal
+    const moonWrapper = container.querySelector('.moon-rating-wrapper');
+    if (moonWrapper) {
+        moonWrapper.style.display = 'flex';
+        moonWrapper.style.flexDirection = 'row';
+        moonWrapper.style.gap = '10px';
+        moonWrapper.style.marginBottom = '15px';
+    }
+    
+    // Convert standing ovation button to icon if it exists
+    const standingOvationBtn = container.querySelector('.standing-ovation-btn');
+    if (standingOvationBtn) {
+        // Create a new icon element
+        const standingOvationIcon = document.createElement('div');
+        standingOvationIcon.className = 'standing-ovation-icon';
+        standingOvationIcon.setAttribute('data-value', 'Standing Ovation');
+        standingOvationIcon.style.cssText = `
+            font-size: 28px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-left: 10px;
+            color: #ccc;
+        `;
+        standingOvationIcon.innerHTML = '<i class="fa-solid fa-person"></i>';
+        
+        // Replace the button with the icon
+        if (standingOvationBtn.parentNode) {
+            standingOvationBtn.parentNode.replaceChild(standingOvationIcon, standingOvationBtn);
+        }
+        
+        // Now update our reference to use the icon
+        var standingOvation = standingOvationIcon;
+    } else {
+        // Try to find if it's already been converted to an icon
+        var standingOvation = container.querySelector('.standing-ovation-icon');
+    }
+    
     const moonItems = container.querySelectorAll('.moon-item');
-    const standingOvation = container.querySelector('.standing-ovation-btn');
     let selectedRating = '';
     
     console.log("Found moon items:", moonItems.length);
@@ -1427,6 +1415,12 @@ function setupMoonRating(container, hiddenInput) {
         moon.querySelector('i').style.color = '#ccc'; // Force grey color
     });
     
+    // Reset the standing ovation icon
+    if (standingOvation) {
+        standingOvation.style.color = '#ccc';
+        standingOvation.classList.remove('selected');
+    }
+    
     // Reset the rating display
     function resetRating() {
         moonItems.forEach(item => {
@@ -1436,7 +1430,10 @@ function setupMoonRating(container, hiddenInput) {
             icon.classList.add('fa-solid');
             icon.style.color = '#ccc';
         });
-        standingOvation.classList.remove('selected');
+        if (standingOvation) {
+            standingOvation.style.color = '#ccc';
+            standingOvation.classList.remove('selected');
+        }
         hiddenInput.value = '';
         selectedRating = '';
     }
@@ -1446,7 +1443,10 @@ function setupMoonRating(container, hiddenInput) {
         resetRating();
         
         if (rating === 'Standing Ovation') {
-            standingOvation.classList.add('selected');
+            if (standingOvation) {
+                standingOvation.style.color = '#FFD700'; // Gold color
+                standingOvation.classList.add('selected');
+            }
             hiddenInput.value = rating;
             selectedRating = rating;
             return;
@@ -1510,14 +1510,16 @@ function setupMoonRating(container, hiddenInput) {
     });
     
     // Handle standing ovation selection
-    standingOvation.addEventListener('click', function() {
-        console.log("Standing ovation clicked");
-        if (selectedRating === 'Standing Ovation') {
-            resetRating();
-        } else {
-            updateDisplay('Standing Ovation');
-        }
-    });
+    if (standingOvation) {
+        standingOvation.addEventListener('click', function() {
+            console.log("Standing ovation clicked");
+            if (selectedRating === 'Standing Ovation') {
+                resetRating();
+            } else {
+                updateDisplay('Standing Ovation');
+            }
+        });
+    }
     
     // Initialize in grey state
     resetRating();
@@ -1534,7 +1536,7 @@ function createEditMoonRating(container, initialValue) {
     // Very similar to setupMoonRating, but for the edit modal
     const editMoonHTML = `
         <div class="moon-rating-new">
-            <div class="moon-rating-wrapper">
+            <div class="moon-rating-wrapper" style="display: flex; flex-direction: row; gap: 10px; margin-bottom: 15px;">
                 <div class="moon-item" data-value="1">
                     <i class="fa-solid fa-moon"></i>
                 </div>
@@ -1550,49 +1552,153 @@ function createEditMoonRating(container, initialValue) {
                 <div class="moon-item" data-value="5">
                     <i class="fa-solid fa-moon"></i>
                 </div>
-            </div>
-            <div class="standing-ovation-btn" data-value="Standing Ovation">
-                <i class="fa-solid fa-person"></i> Standing Ovation
+                <div class="standing-ovation-icon" data-value="Standing Ovation" style="
+                    font-size: 28px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    margin-left: 10px;
+                    color: #ccc;
+                ">
+                    <i class="fa-solid fa-person"></i>
+                </div>
             </div>
         </div>
         <input type="hidden" id="editRatingValue" name="editRating" value="${initialValue || ''}">
-        <div class="rating-hint">Click a moon to select rating. Click the same moon again for half rating.</div>
     `;
     
     container.innerHTML = editMoonHTML;
     
-    const ratingControl = setupMoonRating(
-        container.querySelector('.moon-rating-new'),
-        container.querySelector('#editRatingValue')
-    );
+    const moonItems = container.querySelectorAll('.moon-item');
+    const standingOvation = container.querySelector('.standing-ovation-icon');
+    const hiddenInput = container.querySelector('#editRatingValue');
+    let selectedRating = '';
     
-    if (initialValue) {
-        ratingControl.setValue(initialValue);
+    console.log("Found moon items:", moonItems.length);
+    
+    // Reset all moons to default state (ensure they start grey)
+    moonItems.forEach(moon => {
+        moon.classList.remove('selected', 'half-selected');
+        moon.querySelector('i').style.color = '#ccc'; // Force grey color
+    });
+    
+    // Reset the standing ovation icon
+    if (standingOvation) {
+        standingOvation.style.color = '#ccc';
+        standingOvation.classList.remove('selected');
     }
     
-    return ratingControl;
-}
-
-// When creating the edit modal, use this function:
-function createModalOverlay(play) {
-    // ... existing code ...
+    // Reset the rating display
+    function resetRating() {
+        moonItems.forEach(item => {
+            item.classList.remove('selected', 'half-selected');
+            const icon = item.querySelector('i');
+            icon.classList.remove('fa-regular');
+            icon.classList.add('fa-solid');
+            icon.style.color = '#ccc';
+        });
+        if (standingOvation) {
+            standingOvation.style.color = '#ccc';
+            standingOvation.classList.remove('selected');
+        }
+        hiddenInput.value = '';
+        selectedRating = '';
+    }
     
-    // For the rating section in the edit modal
-    const ratingContainer = modal.querySelector('.edit-rating-container');
-    const ratingControl = createEditMoonRating(ratingContainer, play.rating);
+    // Update the visual display based on the selected rating
+    function updateDisplay(rating) {
+        resetRating();
+        
+        if (rating === 'Standing Ovation') {
+            if (standingOvation) {
+                standingOvation.style.color = '#FFD700'; // Gold color
+                standingOvation.classList.add('selected');
+            }
+            hiddenInput.value = rating;
+            selectedRating = rating;
+            return;
+        }
+        
+        if (!rating) return;
+        
+        const ratingValue = parseFloat(rating);
+        const fullValue = Math.floor(ratingValue);
+        const hasHalf = ratingValue % 1 !== 0;
+        
+        // Update full moons
+        for (let i = 0; i < fullValue; i++) {
+            moonItems[i].classList.add('selected');
+            moonItems[i].querySelector('i').style.color = '#FFD700'; // Gold color
+        }
+        
+        // Update half moon if needed
+        if (hasHalf && fullValue < moonItems.length) {
+            // Clear the original moon icon and replace with half moon
+            const halfMoonItem = moonItems[fullValue];
+            halfMoonItem.classList.add('half-selected');
+            
+            // Replace the solid moon with regular moon for half rating
+            const icon = halfMoonItem.querySelector('i');
+            icon.classList.remove('fa-solid');
+            icon.classList.add('fa-regular');
+            icon.style.color = '#FFD700'; // Gold color
+        }
+        
+        hiddenInput.value = rating;
+        selectedRating = rating;
+    }
     
-    // ... existing code ...
-    
-    // When saving the edited play
-    saveButton.addEventListener('click', async () => {
-        // ... existing code ...
-        const updatedPlay = {
-            // ... other properties ...
-            rating: ratingControl.getValue() || null,
-            // ... other properties ...
-        };
-        // ... existing save logic ...
+    // Handle moon clicks - directly attach click handlers
+    moonItems.forEach((moon, index) => {
+        console.log("Attaching handlers to moon", index + 1);
+        
+        moon.addEventListener('click', function() {
+            console.log("Moon clicked:", index + 1);
+            const value = index + 1;
+            
+            // If already selected as full value, change to half value
+            if (selectedRating === value.toString()) {
+                // If clicked the first moon, can't go below 1
+                if (value === 1) {
+                    resetRating(); // Just clear the rating
+                } else {
+                    updateDisplay((value - 0.5).toString());
+                }
+            } 
+            // If already selected as half value, clear the rating
+            else if (selectedRating === (value - 0.5).toString()) {
+                resetRating();
+            }
+            // Otherwise, select the full value
+            else {
+                updateDisplay(value.toString());
+            }
+        });
     });
+    
+    // Handle standing ovation selection
+    if (standingOvation) {
+        standingOvation.addEventListener('click', function() {
+            console.log("Standing ovation clicked");
+            if (selectedRating === 'Standing Ovation') {
+                resetRating();
+            } else {
+                updateDisplay('Standing Ovation');
+            }
+        });
+    }
+    
+    // Initialize with initial value or reset
+    if (initialValue) {
+        updateDisplay(initialValue);
+    } else {
+        resetRating();
+    }
+    
+    return {
+        getValue: () => selectedRating,
+        setValue: (rating) => updateDisplay(rating),
+        reset: resetRating
+    };
 }
 
 // Initialize the moon rating when document is ready
@@ -1624,10 +1730,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 const ratingValue = document.getElementById('ratingValue').value;
                 console.log("Submitting form with rating:", ratingValue);
                 
-                // Create play object from form
+                // Get date and ensure it's in the correct format (YYYY-MM-DD)
+                const dateInput = document.getElementById('playDate').value;
+                // Format the date to ensure it's in YYYY-MM-DD format without time component
+                const formattedDate = dateInput.split('T')[0]; // Remove any time component
+                
+                // Create play object with properly formatted date
                 const play = {
                     name: document.getElementById('playName').value,
-                    date: document.getElementById('playDate').value,
+                    date: formattedDate,
                     theatre: document.getElementById('playTheatre').value || null,
                     rating: ratingValue || null,
                     image: document.getElementById('playImage').value || null
@@ -1666,3 +1777,330 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Fix the fetchUpcomingPlays function
+async function fetchUpcomingPlays() {
+    console.log("Fetching upcoming plays");
+    try {
+        // Get today's date at the start of the day
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString();
+        
+        console.log("Fetching plays after:", todayStr);
+        
+        // Fetch plays with dates after today
+        const { data, error } = await dbClient
+            .from('plays')
+            .select('*')
+            .gte('date', todayStr)
+            .order('date', { ascending: true });
+        
+        if (error) {
+            console.error("Error fetching upcoming plays:", error);
+            throw error;
+        }
+        
+        console.log("Fetched upcoming plays:", data ? data.length : 0);
+        
+        return data || [];
+    } catch (error) {
+        console.error('Error in fetchUpcomingPlays:', error);
+        return [];
+    }
+}
+
+// Make displayPlays available in the global scope
+window.displayPlays = displayPlays;
+
+// Also make editPlay available globally since it's used in onclick handlers
+window.editPlay = editPlay;
+
+// Make any other functions that are called from HTML onClick handlers global
+window.toggleHallView = toggleHallView;
+
+// Add this line to expose the signInWithGoogle function if it exists
+if (typeof signInWithGoogle === 'function') {
+    window.signInWithGoogle = signInWithGoogle;
+}
+
+console.log("Auth.js loaded, exposing functions to global scope");
+// Verify the functions are available globally
+console.log("displayPlays global:", typeof window.displayPlays === 'function');
+console.log("editPlay global:", typeof window.editPlay === 'function');
+console.log("toggleHallView global:", typeof window.toggleHallView === 'function');
+
+// Add the missing displayCalendarSection function
+function displayCalendarSection() {
+    console.log("Displaying calendar section");
+    
+    // Get containers
+    const playGrid = document.querySelector('.play-grid');
+    const calendarContainer = document.querySelector('.calendar-container');
+    const addPlayForm = document.querySelector('.add-play-form');
+    
+    // Hide other elements
+    if (playGrid) playGrid.style.display = 'none';
+    if (addPlayForm) addPlayForm.style.display = 'none';
+    
+    // Show calendar container
+    if (calendarContainer) {
+        calendarContainer.style.display = 'block';
+        
+        // If calendar container is empty, initialize it
+        if (!calendarContainer.innerHTML.trim()) {
+            calendarContainer.innerHTML = '<h2>Loading Calendar...</h2>';
+            
+            // Fetch upcoming plays for the calendar
+            fetchUpcomingPlays()
+                .then(plays => {
+                    if (!plays || plays.length === 0) {
+                        calendarContainer.innerHTML = '<h2>Calendar</h2><p>No upcoming plays scheduled.</p>';
+                        return;
+                    }
+                    
+                    // If calendar-view.js has a renderCalendar function, use it
+                    if (typeof renderCalendar === 'function') {
+                        renderCalendar(plays);
+                    } else {
+                        // Basic calendar rendering
+                        renderBasicCalendar(plays, calendarContainer);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error loading calendar:", error);
+                    calendarContainer.innerHTML = '<h2>Calendar</h2><p>Error loading calendar data.</p>';
+                });
+        }
+    }
+    
+    // Update navigation
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    const calendarLink = document.getElementById('calendarLink');
+    if (calendarLink) calendarLink.classList.add('active');
+}
+
+// Basic calendar rendering function for a traditional calendar view
+function renderBasicCalendar(plays, container) {
+    // Sort plays by date
+    plays.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    // Group plays by date for quick lookup
+    const playsByDate = {};
+    plays.forEach(play => {
+        const date = new Date(play.date);
+        const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+        
+        if (!playsByDate[dateStr]) {
+            playsByDate[dateStr] = [];
+        }
+        playsByDate[dateStr].push(play);
+    });
+    
+    // Get the range of months to display
+    let startDate = new Date();
+    let endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 6); // Show 6 months ahead
+    
+    if (plays.length > 0) {
+        // If we have plays, adjust the range to include the earliest and latest plays
+        const playDates = plays.map(play => new Date(play.date));
+        const earliestPlay = new Date(Math.min(...playDates));
+        const latestPlay = new Date(Math.max(...playDates));
+        
+        if (earliestPlay < startDate) startDate = earliestPlay;
+        if (latestPlay > endDate) endDate = latestPlay;
+    }
+    
+    // Create HTML
+    let html = '<div class="calendar-view">';
+    html += '<h2>Calendar View</h2>';
+    
+    // Generate calendar for each month in the range
+    let currentMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    
+    while (currentMonth <= endDate) {
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+        
+        // Get month name
+        const monthName = currentMonth.toLocaleString('default', { month: 'long' });
+        
+        html += `
+            <div class="calendar-month">
+                <h3>${monthName} ${year}</h3>
+                <div class="calendar-grid">
+                    <div class="calendar-weekday">Sun</div>
+                    <div class="calendar-weekday">Mon</div>
+                    <div class="calendar-weekday">Tue</div>
+                    <div class="calendar-weekday">Wed</div>
+                    <div class="calendar-weekday">Thu</div>
+                    <div class="calendar-weekday">Fri</div>
+                    <div class="calendar-weekday">Sat</div>
+        `;
+        
+        // Get first day of month and total days in month
+        const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const lastDateOfMonth = new Date(year, month + 1, 0).getDate();
+        
+        // Add empty cells for days before the first day of the month
+        for (let i = 0; i < firstDayOfMonth; i++) {
+            html += '<div class="calendar-day empty"></div>';
+        }
+        
+        // Add cells for each day of the month
+        for (let day = 1; day <= lastDateOfMonth; day++) {
+            const date = new Date(year, month, day);
+            const dateStr = date.toISOString().split('T')[0];
+            const isToday = new Date().toISOString().split('T')[0] === dateStr;
+            
+            // Check if this date has any plays
+            const daysPlays = playsByDate[dateStr] || [];
+            
+            html += `<div class="calendar-day${isToday ? ' today' : ''}">
+                <div class="calendar-date-number">${day}</div>`;
+            
+            // Add plays for this day
+            if (daysPlays.length > 0) {
+                daysPlays.forEach(play => {
+                    html += `
+                        <div class="calendar-play-entry">
+                            <div class="calendar-play-title">${play.name}</div>
+                            <div class="calendar-play-venue">${play.theatre || 'TBA'}</div>
+                            <button class="mini-edit-btn" onclick="editPlay('${play.id}')">Edit</button>
+                        </div>
+                    `;
+                });
+            }
+            
+            html += '</div>';
+        }
+        
+        html += '</div></div>';
+        
+        // Move to next month
+        currentMonth.setMonth(currentMonth.getMonth() + 1);
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+    // Add calendar styles
+    const styles = document.createElement('style');
+    styles.textContent = `
+        .calendar-view {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .calendar-month {
+            margin-bottom: 40px;
+        }
+        .calendar-month h3 {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background-color: #e0e0e0;
+            border: 1px solid #e0e0e0;
+        }
+        .calendar-weekday {
+            background-color: #f8f8f8;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+        }
+        .calendar-day {
+            background-color: white;
+            min-height: 100px;
+            padding: 5px;
+            position: relative;
+        }
+        .calendar-day.empty {
+            background-color: #f5f5f5;
+        }
+        .calendar-day.today {
+            background-color: #fffde7;
+        }
+        .calendar-date-number {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .calendar-day.today .calendar-date-number {
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+        }
+        .calendar-play-entry {
+            margin-top: 25px;
+            padding: 5px;
+            background-color: #e3f2fd;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .calendar-play-title {
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .calendar-play-venue {
+            font-size: 11px;
+            color: #666;
+            margin: 2px 0;
+        }
+        .mini-edit-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 2px 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-top: 3px;
+        }
+        
+        /* Make calendar responsive */
+        @media (max-width: 768px) {
+            .calendar-day {
+                min-height: 80px;
+                font-size: 12px;
+            }
+            .calendar-play-entry {
+                margin-top: 20px;
+                padding: 3px;
+            }
+        }
+        @media (max-width: 576px) {
+            .calendar-day {
+                min-height: 60px;
+            }
+            .calendar-play-venue {
+                display: none;
+            }
+        }
+    `;
+    document.head.appendChild(styles);
+}
+
+// Expose the calendar function globally
+window.displayCalendarSection = displayCalendarSection;
+
+// Update console logs to check for this function too
+console.log("displayCalendarSection global:", typeof window.displayCalendarSection === 'function');
