@@ -618,49 +618,54 @@ function hideAddPlayForm() {
 }
 
 function setupFormHandlers() {
+    console.log('Setting up form handlers - start');
     const form = document.getElementById('addPlayForm');
+    
+    // Check if form already has handlers
+    if (form.dataset.initialized) {
+        console.log('Form already initialized, skipping setup');
+        return;
+    }
+    
     const imageInput = document.getElementById('playImage');
     const imagePreview = document.querySelector('.image-preview');
     const standingOvationBtn = document.getElementById('standingOvation');
 
-    // Image URL validation and preview
-    imageInput.addEventListener('input', () => {
-        const url = imageInput.value;
-        if (url && isValidUrl(url)) {
-            imagePreview.style.backgroundImage = `url(${url})`;
-            imagePreview.textContent = '';
-        } else {
-            imagePreview.style.backgroundImage = 'none';
-            imagePreview.textContent = 'Image preview will appear here';
-        }
-    });
+    // Mark form as initialized
+    form.dataset.initialized = 'true';
 
-    // Standing ovation toggle
-    standingOvationBtn.addEventListener('click', () => {
-        const isActive = standingOvationBtn.classList.toggle('active');
-        document.querySelectorAll('.star-rating input').forEach(input => {
-            input.checked = false;
-            input.disabled = isActive;
-        });
-    });
-
-    // Form submission
+    // Form submission with submit lock
+    let isSubmitting = false;
     form.addEventListener('submit', async (e) => {
+        console.log('Form submit triggered, isSubmitting:', isSubmitting);
         e.preventDefault();
         
-        const selectedRating = form.querySelector('input[name="rating"]:checked');
-        const rating = standingOvationBtn.classList.contains('active') ? 5 : 
-                      (selectedRating ? parseFloat(selectedRating.value) : null);
+        if (isSubmitting) {
+            console.log('Already submitting, ignoring');
+            return;
+        }
+        
+        isSubmitting = true;
+        console.log('Starting submission');
 
-        const formData = {
-            name: form.playName.value,
-            date: form.playDate.value,
-            theatre: form.playTheatre.value || null,
-            rating: rating,
-            image: form.playImage.value && isValidUrl(form.playImage.value) ? form.playImage.value : null
-        };
-
+        const submitButton = form.querySelector('.submit-btn');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Adding...';
+        
         try {
+            const selectedRating = form.querySelector('input[name="rating"]:checked');
+            const rating = standingOvationBtn.classList.contains('active') ? 5 : 
+                          (selectedRating ? parseFloat(selectedRating.value) : null);
+
+            const formData = {
+                name: form.playName.value,
+                date: form.playDate.value,
+                theatre: form.playTheatre.value || null,
+                rating: rating,
+                image: form.playImage.value && isValidUrl(form.playImage.value) ? form.playImage.value : null
+            };
+
+            console.log('Submitting form data:', formData);
             const { data, error } = await supabaseClient
                 .from('plays')
                 .insert([formData])
@@ -675,8 +680,16 @@ function setupFormHandlers() {
         } catch (error) {
             console.error('Error adding play:', error);
             alert('Error adding play: ' + error.message);
+        } finally {
+            console.log('Submission complete');
+            isSubmitting = false;
+            submitButton.disabled = false;
+            submitButton.textContent = 'Add Play';
         }
     });
+
+    // Rest of the handlers...
+    console.log('Form handlers setup complete');
 }
 
 function isValidUrl(string) {
