@@ -148,6 +148,10 @@ async function displayPlays(section = 'all') {
     console.log("displayPlays called with section:", section); // Debug log
     const playGrid = document.querySelector('.play-grid');
     const calendarContainer = document.querySelector('.calendar-container');
+    const addPlayForm = document.querySelector('.add-play-form');
+    
+    // Hide the add play form regardless of which section we're going to
+    if (addPlayForm) addPlayForm.style.display = 'none';
     
     // Handle dashboard separately
     if (section === 'dashboard') {
@@ -612,15 +616,22 @@ document.head.appendChild(formStyles);
 
 // Add form functions after existing functions
 function showAddPlayForm() {
+    // Update active nav link
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    document.getElementById('addPlayLink').classList.add('active');
+    
+    // Hide other containers
     const playGrid = document.querySelector('.play-grid');
     const calendarContainer = document.querySelector('.calendar-container');
-    const addPlayForm = document.querySelector('.add-play-form');
     
     if (playGrid) playGrid.style.display = 'none';
     if (calendarContainer) calendarContainer.style.display = 'none';
-    if (addPlayForm) addPlayForm.style.display = 'block';
     
-    setupFormHandlers();
+    // Show the add play form
+    const addPlayForm = document.querySelector('.add-play-form');
+    if (addPlayForm) addPlayForm.style.display = 'block';
 }
 
 function hideAddPlayForm() {
