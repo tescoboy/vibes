@@ -147,12 +147,14 @@ async function displayPlays(section = 'all') {
         document.getElementById(`${section}PlaysLink`).classList.add('active');
     }
 
-    // Show/hide relevant toggles
+    // Show/hide calendar toggle for upcoming and seen plays
     const calendarToggle = document.querySelector('.calendar-toggle');
-    const hallToggle = document.querySelector('.hall-toggle');
     if (calendarToggle) {
-        calendarToggle.style.display = section === 'upcoming' ? 'block' : 'none';
+        calendarToggle.style.display = (section === 'upcoming' || section === 'seen') ? 'block' : 'none';
     }
+
+    // Show/hide hall toggle
+    const hallToggle = document.querySelector('.hall-toggle');
     if (hallToggle) {
         hallToggle.style.display = (section === 'hallOfFame' || section === 'hallOfShame') ? 'block' : 'none';
     }
@@ -162,6 +164,9 @@ async function displayPlays(section = 'all') {
         switch(section) {
             case 'upcoming':
                 plays = await fetchUpcomingPlays();
+                break;
+            case 'seen':
+                plays = await fetchSeenPlays();
                 break;
             case 'hallOfFame':
                 plays = await fetchHallOfFamePlays();
@@ -178,10 +183,10 @@ async function displayPlays(section = 'all') {
             return;
         }
 
-        if (section === 'upcoming' && isCalendarView) {
+        if ((section === 'upcoming' || section === 'seen') && isCalendarView) {
             playGrid.style.display = 'none';
             calendarContainer.style.display = 'block';
-            renderCalendar();
+            renderCalendar(plays);
         } else {
             playGrid.style.display = 'grid';
             if (calendarContainer) {

@@ -77,4 +77,24 @@ async function fetchHallOfShamePlays() {
         console.error('Error fetching hall of shame plays:', error);
         return [];
     }
-} 
+}
+
+// Function to fetch seen plays (plays in the past)
+async function fetchSeenPlays() {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        const { data, error } = await dbClient
+            .from('plays')
+            .select('*')
+            .lt('date', today)  // Get plays with date less than today
+            .order('date', { ascending: false });  // Most recent first
+
+        if (error) throw error;
+        return data || [];
+
+    } catch (error) {
+        console.error('Error fetching seen plays:', error);
+        return [];
+    }
+}
