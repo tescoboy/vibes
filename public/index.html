@@ -21,6 +21,7 @@
                 <a class="nav-link" id="upcomingPlaysLink" onclick="displayPlays('upcoming')">Upcoming Plays</a>
                 <a class="nav-link" id="seenPlaysLink" onclick="displayPlays('seen')">Seen Plays</a>
                 <a class="nav-link" id="hallOfFamePlaysLink" onclick="displayPlays('hallOfFame')">Hall of Fame</a>
+                <a class="nav-link" id="addPlayLink" onclick="showAddPlayForm()">Add Play</a>
                 <div class="auth-buttons">
                     <button id="signInBtn" onclick="signInWithGoogle()">Sign in with Google</button>
                     <button id="signOutBtn" onclick="signOut()" style="display: none;">Sign Out</button>
@@ -39,6 +40,54 @@
         </button>
         <div class="calendar-container"></div>
         <div class="play-grid"></div>
+        <div class="add-play-form" style="display: none;">
+            <h2>Add New Play</h2>
+            <form id="addPlayForm">
+                <div class="form-group">
+                    <label for="playName">Play Name *</label>
+                    <input type="text" id="playName" name="playName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="playDate">Date *</label>
+                    <input type="date" id="playDate" name="playDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="playTheatre">Theatre (optional)</label>
+                    <input type="text" id="playTheatre" name="playTheatre">
+                </div>
+
+                <div class="form-group">
+                    <label for="playRating">Rating (optional)</label>
+                    <div class="rating-container">
+                        <div class="star-rating">
+                            <input type="radio" id="rating5" name="rating" value="5"><label for="rating5">★</label>
+                            <input type="radio" id="rating4.5" name="rating" value="4.5"><label for="rating4.5">★</label>
+                            <input type="radio" id="rating4" name="rating" value="4"><label for="rating4">★</label>
+                            <input type="radio" id="rating3.5" name="rating" value="3.5"><label for="rating3.5">★</label>
+                            <input type="radio" id="rating3" name="rating" value="3"><label for="rating3">★</label>
+                            <input type="radio" id="rating2.5" name="rating" value="2.5"><label for="rating2.5">★</label>
+                            <input type="radio" id="rating2" name="rating" value="2"><label for="rating2">★</label>
+                            <input type="radio" id="rating1.5" name="rating" value="1.5"><label for="rating1.5">★</label>
+                            <input type="radio" id="rating1" name="rating" value="1"><label for="rating1">★</label>
+                        </div>
+                        <button type="button" id="standingOvation" class="standing-ovation-btn">Standing Ovation 👏</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="playImage">Image URL (optional)</label>
+                    <input type="url" id="playImage" name="playImage" placeholder="https://...">
+                    <div class="image-preview">Image preview will appear here</div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn">Add Play</button>
+                    <button type="button" class="cancel-btn" onclick="hideAddPlayForm()">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="/nav-styles.js"></script>
