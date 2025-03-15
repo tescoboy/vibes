@@ -528,3 +528,16 @@ body {
     50% { transform: scale(1.05); }
     100% { transform: scale(1); }
 }
+
+/* Additional styles for the calendar section */
+.no-plays-message, .error-message {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+
+.error-message {
+    color: #d9534f;
+}
+
+/* Calendar styles should be included from your existing code */

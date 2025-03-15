@@ -187,7 +187,7 @@ async function displayPlays(section = 'all') {
     const calendarToggle = document.querySelector('.calendar-toggle');
     const hallToggle = document.querySelector('.hall-toggle');
     if (calendarToggle) {
-        calendarToggle.style.display = (section === 'upcoming' || section === 'seen') ? 'block' : 'none';
+        calendarToggle.style.display = 'none'; // Hide calendar toggle since we have a dedicated Calendar section
     }
     if (hallToggle) {
         hallToggle.style.display = (section === 'hallOfFame' || section === 'hallOfShame') ? 'block' : 'none';
@@ -1248,3 +1248,167 @@ modalStyles.textContent = `
     }
 `;
 document.head.appendChild(modalStyles);
+
+// Add this function to display the dedicated calendar section
+async function displayCalendarSection() {
+    console.log("Displaying calendar section");
+    const playGrid = document.querySelector('.play-grid');
+    const calendarContainer = document.querySelector('.calendar-container');
+    
+    // Update active nav link
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    document.getElementById('calendarLink').classList.add('active');
+    
+    // Hide play grid and show calendar
+    if (playGrid) playGrid.style.display = 'none';
+    if (calendarContainer) {
+        calendarContainer.style.display = 'block';
+        
+        // Fetch all plays for the calendar
+        try {
+            const plays = await fetchPlays();
+            if (plays && plays.length > 0) {
+                renderUnifiedCalendar(plays);
+            } else {
+                calendarContainer.innerHTML = '<p class="no-plays-message">No plays available to display on calendar</p>';
+            }
+        } catch (error) {
+            console.error('Error fetching plays for calendar:', error);
+            calendarContainer.innerHTML = '<p class="error-message">Error loading calendar</p>';
+        }
+    }
+}
+
+// Make sure this function exists and is modified to accept plays as a parameter if needed
+async function renderUnifiedCalendar(plays) {
+    const calendarContainer = document.querySelector('.calendar-container');
+    
+    // If plays parameter is not provided, fetch them
+    if (!plays) {
+        try {
+            plays = await fetchPlays();
+            if (!plays || plays.length === 0) {
+                calendarContainer.innerHTML = '<p>No plays available to display on calendar</p>';
+                return;
+            }
+        } catch (error) {
+            console.error('Error fetching plays for calendar:', error);
+            calendarContainer.innerHTML = '<p>Error loading calendar</p>';
+            return;
+        }
+    }
+    
+    // Calendar rendering code - using current implementation
+    // ... 
+    // Your existing calendar rendering code
+    const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    
+    // Generate calendar HTML
+    calendarContainer.innerHTML = `
+        <div class="calendar-header">
+            <div class="calendar-nav">
+                <button id="prevMonth">&lt; Previous</button>
+                <div class="calendar-month">${currentMonth.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</div>
+                <button id="nextMonth">Next &gt;</button>
+            </div>
+        </div>
+        <div class="calendar-grid">
+            <div class="calendar-day-header">Sun</div>
+            <div class="calendar-day-header">Mon</div>
+            <div class="calendar-day-header">Tue</div>
+            <div class="calendar-day-header">Wed</div>
+            <div class="calendar-day-header">Thu</div>
+            <div class="calendar-day-header">Fri</div>
+            <div class="calendar-day-header">Sat</div>
+        </div>
+    `;
+    
+    // Get calendar grid for adding days
+    const calendarGrid = calendarContainer.querySelector('.calendar-grid');
+    
+    // Add event listeners for navigation buttons
+    document.getElementById('prevMonth').addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderUnifiedCalendar(plays);
+    });
+    
+    document.getElementById('nextMonth').addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderUnifiedCalendar(plays);
+    });
+    
+    // Add days from previous month to fill first row
+    const firstDay = new Date(currentMonth).getDay();
+    const prevMonthLastDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate();
+    
+    for (let i = 0; i < firstDay; i++) {
+        const dayNum = prevMonthLastDay - firstDay + i + 1;
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day other-month';
+        dayDiv.innerHTML = `<div class="calendar-day-number">${dayNum}</div>`;
+        calendarGrid.appendChild(dayDiv);
+    }
+    
+    // Add days for current month
+    const today = new Date();
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+        const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+        const isToday = date.getDate() === today.getDate() && 
+                       date.getMonth() === today.getMonth() && 
+                       date.getFullYear() === today.getFullYear();
+        
+        // Find plays for this day
+        const daysPlays = plays.filter(play => {
+            const playDate = new Date(play.date);
+            return playDate.getDate() === date.getDate() && 
+                   playDate.getMonth() === date.getMonth() && 
+                   playDate.getFullYear() === date.getFullYear();
+        });
+        
+        const dayDiv = document.createElement('div');
+        dayDiv.className = `calendar-day${isToday ? ' today' : ''}${daysPlays.length ? ' has-plays' : ''}`;
+        dayDiv.innerHTML = `<div class="calendar-day-number">${day}</div>`;
+        
+        // Add plays for this day
+        daysPlays.forEach(play => {
+            const now = new Date();
+            const playDate = new Date(play.date);
+            const isPastPlay = playDate < now;
+            
+            const playDiv = document.createElement('div');
+            playDiv.className = `calendar-play ${isPastPlay ? 'past-play' : 'upcoming-play'}`;
+            playDiv.innerHTML = `
+                <div class="play-title">${play.name}</div>
+                ${play.theatre ? `<div class="play-theatre">${play.theatre}</div>` : ''}
+                ${play.rating ? `<div class="play-rating">Rating: ${play.rating}</div>` : ''}
+            `;
+            
+            // Make the play card clickable
+            playDiv.addEventListener('click', () => {
+                editPlay(play.id);
+            });
+            
+            dayDiv.appendChild(playDiv);
+        });
+        
+        calendarGrid.appendChild(dayDiv);
+    }
+    
+    // Add days from next month to complete the grid
+    const daysAdded = firstDay + lastDay.getDate();
+    const remainingDays = 7 - (daysAdded % 7);
+    if (remainingDays < 7) {
+        for (let i = 1; i <= remainingDays; i++) {
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'calendar-day other-month';
+            dayDiv.innerHTML = `<div class="calendar-day-number">${i}</div>`;
+            calendarGrid.appendChild(dayDiv);
+        }
+    }
+}
+
+// Make sure the calendar styles are included
+// If not already added, add them here
