@@ -233,204 +233,128 @@ async function displayPlays(section = 'all') {
 
 // Function to display dashboard
 async function displayDashboard() {
-    console.log("displayDashboard function called"); // Debug log
     const playGrid = document.querySelector('.play-grid');
-    
-    // Ensure playGrid exists
-    if (!playGrid) {
-        console.error("Play grid element not found");
-        return;
-    }
+    if (!playGrid) return;
 
-    console.log("Setting dashboard HTML"); // Debug log
     playGrid.innerHTML = `
         <div class="dashboard-container">
             <div class="stats-grid">
-                <div class="stat-card" id="total-seen">
-                    <div class="stat-icon">👁️</div>
-                    <div class="stat-label">Total Plays Seen</div>
-                    <div class="stat-number">...</div>
+                <div class="stat-card total-plays">
+                    <h3>Total Plays Seen</h3>
+                    <p class="stat-number">Loading...</p>
                 </div>
-                <div class="stat-card" id="upcoming">
-                    <div class="stat-icon">📅</div>
-                    <div class="stat-label">Upcoming Shows</div>
-                    <div class="stat-number">...</div>
+                <div class="stat-card upcoming-plays">
+                    <h3>Upcoming Plays</h3>
+                    <p class="stat-number">Loading...</p>
                 </div>
-                <div class="stat-card" id="this-year">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-label">This Year's Shows</div>
-                    <div class="stat-number">...</div>
+                <div class="stat-card this-year">
+                    <h3>Plays This Year</h3>
+                    <p class="stat-number">Loading...</p>
                 </div>
-                <div class="stat-card next-play-card" id="next-play">
-                    <div class="stat-icon">🎭</div>
-                    <div class="stat-label">Next Play</div>
-                    <div class="next-play-info">Loading...</div>
+                <div class="stat-card next-play">
+                    <h3>Next Play</h3>
+                    <p class="stat-text">Loading...</p>
                 </div>
             </div>
         </div>
     `;
 
-    // Add dashboard styles
-    if (!document.getElementById('dashboard-styles')) {
-        const styles = document.createElement('style');
-        styles.id = 'dashboard-styles';
-        styles.textContent = `
-            .dashboard-container {
-                max-width: 1400px;
-                margin: 0 auto;
-                padding: 2rem;
-            }
-
-            .stats-grid {
-                display: grid;
-                grid-template-columns: repeat(4, 1fr);
-                gap: 2rem;
-                margin: 2rem auto;
-                padding: 0 2rem;
-                max-width: 1600px;
-            }
-
-            .stat-card {
-                background: white;
-                border-radius: 16px;
-                padding: 2rem;
-                text-align: center;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-                transition: all 0.3s ease;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                aspect-ratio: 1;
-                width: 100%;
-                max-width: 300px;
-                margin: 0 auto;
-                position: relative;
-                overflow: hidden;
-            }
-
-            .stat-card::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 4px;
-                background: linear-gradient(90deg, #4285f4, #34a853);
-                opacity: 0;
-                transition: opacity 0.3s ease;
-            }
-
-            .stat-card:hover {
-                transform: translateY(-5px);
-                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-            }
-
-            .stat-card:hover::before {
-                opacity: 1;
-            }
-
-            .stat-icon {
-                font-size: 2.5rem;
-                margin-bottom: 1rem;
-            }
-
-            .stat-number {
-                font-size: 3.5rem;
-                font-weight: bold;
-                margin: 0.5rem 0;
-                background: linear-gradient(45deg, #4285f4, #34a853);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                line-height: 1.2;
-            }
-
-            .stat-label {
-                font-size: 1.2rem;
-                color: #666;
-                margin-bottom: 0.5rem;
-                font-weight: 500;
-            }
-
-            .next-play-card {
-                background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-            }
-
-            .next-play-info {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-                align-items: center;
-                width: 100%;
-            }
-
-            .next-play-name {
-                font-size: 1.4rem;
-                font-weight: 600;
-                color: #333;
-                line-height: 1.3;
-            }
-
-            .next-play-date {
-                color: #4285f4;
-                font-weight: 600;
-                font-size: 1.1rem;
-            }
-
-            .next-play-theatre {
-                color: #666;
-                font-size: 1rem;
-            }
-
-            @media (max-width: 1200px) {
-                .stats-grid {
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 2rem;
-                    padding: 0 1rem;
-                }
-            }
-
-            @media (max-width: 600px) {
-                .stats-grid {
-                    grid-template-columns: 1fr;
-                    max-width: 300px;
-                    margin: 2rem auto;
-                }
-            }
-        `;
-        document.head.appendChild(styles);
-    }
-
-    // Fetch and update stats
     try {
-        console.log("Fetching dashboard stats"); // Debug log
-        const stats = await fetchDashboardStats();
-        console.log("Received stats:", stats); // Debug log
+        const plays = await fetchPlays();
+        if (!plays) return;
 
-        document.querySelector('#total-seen .stat-number').textContent = stats.totalSeen;
-        document.querySelector('#upcoming .stat-number').textContent = stats.upcoming;
-        document.querySelector('#this-year .stat-number').textContent = stats.thisYear;
-        
-        const nextPlayElement = document.querySelector('#next-play .next-play-info');
-        if (stats.nextPlay) {
-            const date = new Date(stats.nextPlay.date).toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            });
-            nextPlayElement.innerHTML = `
-                <div class="next-play-name">${stats.nextPlay.name}</div>
-                <div class="next-play-date">${date}</div>
-                ${stats.nextPlay.theatre ? `<div class="next-play-theatre">at ${stats.nextPlay.theatre}</div>` : ''}
-            `;
-        } else {
-            nextPlayElement.textContent = 'No upcoming plays';
-        }
+        const now = new Date();
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+        const stats = {
+            totalSeen: plays.filter(play => new Date(play.date) < now).length,
+            upcoming: plays.filter(play => new Date(play.date) >= now).length,
+            thisYear: plays.filter(play => new Date(play.date) >= startOfYear && new Date(play.date) <= now).length,
+            nextPlay: plays.find(play => new Date(play.date) >= now)
+        };
+
+        document.querySelector('.total-plays .stat-number').textContent = stats.totalSeen;
+        document.querySelector('.upcoming-plays .stat-number').textContent = stats.upcoming;
+        document.querySelector('.this-year .stat-number').textContent = stats.thisYear;
+        document.querySelector('.next-play .stat-text').textContent = 
+            stats.nextPlay ? `${stats.nextPlay.name} (${new Date(stats.nextPlay.date).toLocaleDateString('en-GB')})` : 'No upcoming plays';
+
     } catch (error) {
         console.error('Error displaying dashboard:', error);
-        document.querySelector('.dashboard-container').innerHTML = '<p>Error loading dashboard</p>';
     }
 }
+
+// Add dashboard styles
+const dashboardStyles = document.createElement('style');
+dashboardStyles.textContent = `
+    .dashboard-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin: 1rem 0;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+        aspect-ratio: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-card h3 {
+        margin: 0 0 1rem 0;
+        color: #333;
+        font-size: 1.1rem;
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 0;
+        color: #1a73e8;
+    }
+
+    .stat-text {
+        font-size: 1.2rem;
+        margin: 0;
+        color: #1a73e8;
+    }
+
+    @media (max-width: 1200px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 600px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stat-card {
+            aspect-ratio: auto;
+            padding: 1rem;
+        }
+    }
+`;
+document.head.appendChild(dashboardStyles);
 
 // Add some basic styling
 const style = document.createElement('style');
