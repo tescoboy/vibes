@@ -81,22 +81,259 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Function to create a play card
 function createPlayCard(play) {
-    const playCard = document.createElement('div');
-    playCard.className = 'play-card';
-    
-    playCard.innerHTML = `
-        <div class="play-card-content">
-            <img src="${play.image || 'https://placehold.co/400x300?text=No+Image'}" 
-                 alt="${play.name}" 
-                 loading="lazy">
-            <h3>${play.name}</h3>
-            <p>Theatre: ${play.theatre || 'TBA'}</p>
-            <p>Rating: ${play.rating || 'Not Rated'}</p>
-            <p>Date: ${new Date(play.date).toLocaleDateString('en-GB') || 'TBA'}</p>
-        </div>
+    // Main card container with rounded corners
+    const card = document.createElement('div');
+    card.className = 'play-card';
+    card.style.cssText = `
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    `;
+
+    // Image container
+    const imageContainer = document.createElement('div');
+    imageContainer.style.cssText = `
+        width: 100%;
+        height: 200px;
+        background-size: cover;
+        background-position: center;
+    `;
+    if (play.image) {
+        imageContainer.style.backgroundImage = `url(${play.image})`;
+    }
+    card.appendChild(imageContainer);
+
+    // Content container (white background)
+    const content = document.createElement('div');
+    content.style.cssText = `
+        padding: 16px;
+        background: white;
+    `;
+
+    // Play name
+    const name = document.createElement('h3');
+    name.textContent = play.name;
+    name.style.margin = '0 0 8px 0';
+    content.appendChild(name);
+
+    // Date
+    const date = document.createElement('p');
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    date.textContent = new Date(play.date).toLocaleDateString('en-GB', options);
+    date.style.margin = '0 0 8px 0';
+    content.appendChild(date);
+
+    // Theatre
+    if (play.theatre) {
+        const theatre = document.createElement('p');
+        theatre.textContent = play.theatre;
+        theatre.style.margin = '0 0 8px 0';
+        content.appendChild(theatre);
+    }
+
+    // Rating
+    if (play.rating) {
+        const rating = document.createElement('p');
+        rating.className = 'rating';
+        rating.textContent = play.rating === 'Standing Ovation' ? '👏 Standing Ovation' : '★'.repeat(Math.floor(play.rating));
+        if (play.rating % 1 === 0.5) {
+            rating.textContent += '½';
+        }
+        rating.style.margin = '0';
+        content.appendChild(rating);
+    }
+
+    card.appendChild(content);
+
+    // Edit button
+    const editButton = document.createElement('button');
+    editButton.innerHTML = '✏️';
+    editButton.style.cssText = `
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 2;
     `;
     
-    return playCard;
+    // Show/hide button on hover
+    card.addEventListener('mouseenter', () => editButton.style.opacity = '1');
+    card.addEventListener('mouseleave', () => editButton.style.opacity = '0');
+    
+    // Create overlay (hidden by default)
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    `;
+
+    // Create edit form
+    const form = document.createElement('div');
+    form.style.cssText = `
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        width: 80%;
+        max-width: 500px;
+    `;
+    form.innerHTML = `
+        <h2>Edit Play</h2>
+        <input type="text" value="${play.name}" style="width: 100%; margin-bottom: 10px; padding: 8px;">
+        <input type="text" value="${play.theatre || ''}" style="width: 100%; margin-bottom: 10px; padding: 8px;">
+        <input type="date" value="${new Date(play.date).toISOString().split('T')[0]}" style="width: 100%; margin-bottom: 10px; padding: 8px;">
+        <div style="margin-bottom: 10px;">
+            <input type="number" value="${play.rating || ''}" style="width: calc(100% - 100px); padding: 8px;">
+            <button style="padding: 8px; margin-left: 8px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Unrate</button>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <button style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Save</button>
+                <button style="padding: 8px 16px; margin-left: 8px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+            </div>
+            <button style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete Play</button>
+        </div>
+    `;
+
+    overlay.appendChild(form);
+    document.body.appendChild(overlay);
+
+    // Show overlay when edit button is clicked
+    editButton.addEventListener('click', () => {
+        overlay.style.display = 'flex';
+    });
+
+    // Hide overlay when clicking outside form
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.style.display = 'none';
+        }
+    });
+
+    // Get all form buttons and inputs
+    const buttons = form.querySelectorAll('button');
+    const saveButton = buttons[1];     // Save button
+    const cancelButton = buttons[2];    // Cancel button
+    const deleteButton = buttons[3];    // Delete button
+    const unrateButton = buttons[0];    // Unrate button
+
+    const nameInput = form.querySelector('input[type="text"]:nth-child(2)');
+    const theatreInput = form.querySelector('input[type="text"]:nth-child(3)');
+    const dateInput = form.querySelector('input[type="date"]');
+    const ratingInput = form.querySelector('input[type="number"]');
+
+    // Handle unrate
+    unrateButton.addEventListener('click', async () => {
+        ratingInput.value = '';
+        try {
+            await supabaseClient
+                .from('plays')
+                .update({ rating: null })
+                .eq('id', play.id);
+            
+            // Update the rating display
+            const ratingElement = card.querySelector('.rating');
+            if (ratingElement) ratingElement.textContent = '';
+            
+            overlay.style.display = 'none';
+        } catch (error) {
+            console.error('Error updating rating:', error);
+            alert('Failed to update rating');
+        }
+    });
+
+    // Handle delete
+    deleteButton.addEventListener('click', async () => {
+        console.log('Attempting to delete play:', play.id); // Debug log
+        
+        if (confirm('Are you sure you want to delete this play?')) {
+            try {
+                const { error } = await supabaseClient
+                    .from('plays')
+                    .delete()
+                    .eq('id', play.id);
+
+                if (error) throw error;
+                
+                // Remove the card and overlay
+                card.remove();
+                overlay.remove();
+                
+                console.log('Play deleted successfully'); // Debug log
+            } catch (error) {
+                console.error('Error deleting play:', error);
+                alert('Failed to delete play: ' + error.message);
+            }
+        }
+    });
+
+    // Handle save
+    saveButton.addEventListener('click', async () => {
+        try {
+            const updatedPlay = {
+                name: nameInput.value,
+                theatre: theatreInput.value || null,
+                date: dateInput.value,
+                rating: ratingInput.value ? Number(ratingInput.value) : null
+            };
+
+            await supabaseClient
+                .from('plays')
+                .update(updatedPlay)
+                .eq('id', play.id);
+            
+            // Update the card display
+            const nameElement = card.querySelector('h3');
+            const dateElement = card.querySelector('p');
+            const theatreElement = card.querySelector('p:nth-child(3)');
+            const ratingElement = card.querySelector('.rating');
+
+            nameElement.textContent = updatedPlay.name;
+            dateElement.textContent = new Date(updatedPlay.date).toLocaleDateString('en-GB', options);
+            if (theatreElement) theatreElement.textContent = updatedPlay.theatre || '';
+            if (ratingElement) {
+                ratingElement.textContent = updatedPlay.rating ? 
+                    (updatedPlay.rating === 'Standing Ovation' ? '👏 Standing Ovation' : '★'.repeat(Math.floor(updatedPlay.rating))) : '';
+                if (updatedPlay.rating % 1 === 0.5) {
+                    ratingElement.textContent += '½';
+                }
+            }
+
+            overlay.style.display = 'none';
+        } catch (error) {
+            console.error('Error updating play:', error);
+            alert('Failed to update play');
+        }
+    });
+
+    // Handle cancel
+    cancelButton.addEventListener('click', () => {
+        overlay.style.display = 'none';
+    });
+    
+    card.appendChild(editButton);
+
+    return card;
 }
 
 // Function to create a hall of fame play card
