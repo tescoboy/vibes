@@ -92,7 +92,7 @@ function createPlayCard(play) {
             <h3>${play.name}</h3>
             <p>Theatre: ${play.theatre || 'TBA'}</p>
             <p>Rating: ${play.rating || 'Not Rated'}</p>
-            <p>Date: ${play.date || 'TBA'}</p>
+            <p>Date: ${new Date(play.date).toLocaleDateString('en-GB') || 'TBA'}</p>
         </div>
     `;
     
@@ -115,7 +115,7 @@ function createHallOfFameCard(play, isShame = false) {
             <h3>${play.name}</h3>
             <p>Theatre: ${play.theatre || 'TBA'}</p>
             <p class="rating">Rating: ${play.rating || 'Not Rated'}</p>
-            <p>Date: ${play.date || 'TBA'}</p>
+            <p>Date: ${new Date(play.date).toLocaleDateString('en-GB') || 'TBA'}</p>
         </div>
     `;
     
