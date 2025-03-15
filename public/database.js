@@ -9,17 +9,16 @@ const dbClient = supabase.createClient(
 // Function to fetch all plays
 async function fetchPlays() {
     try {
-        const { data, error } = await dbClient
+        const { data, error } = await supabaseClient
             .from('plays')
-            .select('*')
-            .order('date', { ascending: false });
+            .select('*');
 
         if (error) throw error;
-        return data || [];
+        return data;
 
     } catch (error) {
         console.error('Error fetching plays:', error);
-        return [];
+        throw error;
     }
 }
 
@@ -98,3 +97,27 @@ async function fetchSeenPlays() {
         return [];
     }
 }
+
+async function addPlay(playData) {
+    try {
+        // Remove any undefined or null values
+        Object.keys(playData).forEach(key => 
+            (playData[key] === null || playData[key] === undefined) && delete playData[key]
+        );
+
+        const { data, error } = await supabaseClient
+            .from('plays')
+            .insert([playData])
+            .select();
+
+        if (error) throw error;
+        return data;
+
+    } catch (error) {
+        console.error('Error adding play:', error);
+        throw error;
+    }
+}
+
+window.fetchPlays = fetchPlays;
+window.addPlay = addPlay;

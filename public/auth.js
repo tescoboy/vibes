@@ -131,103 +131,68 @@ function toggleHallView() {
 
 // Function to display plays
 async function displayPlays(section = 'all') {
-    console.log("displayPlays called with section:", section); // Debug log
+    console.log("displayPlays called with section:", section);
     const playGrid = document.querySelector('.play-grid');
     const calendarContainer = document.querySelector('.calendar-container');
     
-    // Handle dashboard separately
     if (section === 'dashboard') {
-        console.log("Displaying dashboard"); // Debug log
-        // Update active nav link
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-        });
-        document.getElementById('dashboardLink').classList.add('active');
-        
-        // Hide other containers
         if (calendarContainer) calendarContainer.style.display = 'none';
-        if (playGrid) playGrid.style.display = 'grid'; // Changed to ensure grid is visible
-        
-        // Display dashboard
-        await displayDashboard(); // Added await
+        if (playGrid) playGrid.style.display = 'block';
+        await displayDashboard();
         return;
     }
 
-    // Clear existing content for non-dashboard sections
-    if (playGrid) playGrid.innerHTML = '';
-    if (calendarContainer) calendarContainer.style.display = 'none';
-
-    // Update active nav link
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-    });
-    
-    // Set active nav and show/hide toggles
-    if (section === 'hallOfShame') {
-        document.getElementById('hallOfFamePlaysLink').classList.add('active');
-    } else {
-        document.getElementById(`${section}PlaysLink`).classList.add('active');
-    }
-
-    // Show/hide relevant toggles
-    const calendarToggle = document.querySelector('.calendar-toggle');
-    const hallToggle = document.querySelector('.hall-toggle');
-    if (calendarToggle) {
-        calendarToggle.style.display = (section === 'upcoming' || section === 'seen') ? 'block' : 'none';
-    }
-    if (hallToggle) {
-        hallToggle.style.display = (section === 'hallOfFame' || section === 'hallOfShame') ? 'block' : 'none';
-    }
-
-    // Ensure play grid is visible
-    if (playGrid) playGrid.style.display = 'grid';
+    const now = new Date();
 
     try {
-        let plays;
-        switch(section) {
-            case 'upcoming':
-                plays = await fetchUpcomingPlays();
-                break;
-            case 'seen':
-                plays = await fetchSeenPlays();
-                break;
-            case 'hallOfFame':
-                plays = await fetchHallOfFamePlays();
-                break;
-            case 'hallOfShame':
-                plays = await fetchHallOfShamePlays();
-                break;
-            default:
-                plays = await fetchPlays();
-        }
-        
-        if (!plays || plays.length === 0) {
-            if (playGrid) playGrid.innerHTML = `<p>No ${section.replace(/([A-Z])/g, ' $1').toLowerCase()} plays available</p>`;
-            return;
+        const plays = await fetchPlays();
+        if (!plays) return;
+
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.getElementById(`${section}PlaysLink`)?.classList.add('active');
+
+        let filteredPlays = plays;
+        if (section === 'upcoming') {
+            filteredPlays = plays
+                .filter(play => new Date(play.date) >= now)
+                .sort((a, b) => new Date(a.date) - new Date(b.date)); // Chronological for upcoming
+        } else if (section === 'seen') {
+            filteredPlays = plays
+                .filter(play => new Date(play.date) < now)
+                .sort((a, b) => new Date(b.date) - new Date(a.date)); // Most recent first
+        } else if (section === 'hallOfFame') {
+            filteredPlays = plays
+                .filter(play => play.rating >= 4.5)
+                .sort((a, b) => new Date(b.date) - new Date(a.date)); // Most recent first
+        } else {
+            // 'all' section - most recent first
+            filteredPlays = plays.sort((a, b) => new Date(b.date) - new Date(a.date));
         }
 
-        if ((section === 'upcoming' || section === 'seen') && isCalendarView) {
-            if (playGrid) playGrid.style.display = 'none';
-            if (calendarContainer) {
-                calendarContainer.style.display = 'block';
-                renderCalendar(plays);
-            }
-        } else {
-            if (playGrid) {
-                playGrid.style.display = 'grid';
-                plays.forEach(play => {
-                    const playCard = (section === 'hallOfFame' || section === 'hallOfShame') ? 
-                        createHallOfFameCard(play, section === 'hallOfShame') : 
-                        createPlayCard(play);
-                    playGrid.appendChild(playCard);
-                });
-            }
-            if (calendarContainer) calendarContainer.style.display = 'none';
-        }
+        if (calendarContainer) calendarContainer.style.display = 'none';
+        playGrid.innerHTML = '';
+        playGrid.style.display = 'grid';
+
+        filteredPlays.forEach(play => {
+            const playDate = new Date(play.date);
+            const isUpcoming = playDate >= now;
+            
+            const card = document.createElement('div');
+            card.className = `play-card ${isUpcoming ? 'upcoming' : ''}`;
+            card.innerHTML = `
+                ${play.image ? `<img src="${play.image}" alt="${play.name}" class="play-image">` : ''}
+                <div class="play-info">
+                    <h3>${play.name}</h3>
+                    <p class="date">${playDate.toLocaleDateString('en-GB')}</p>
+                    ${play.theatre ? `<p class="theatre">${play.theatre}</p>` : ''}
+                    ${play.rating ? `<p class="rating">Rating: ${play.rating}</p>` : ''}
+                </div>
+            `;
+            playGrid.appendChild(card);
+        });
 
     } catch (error) {
         console.error('Error displaying plays:', error);
-        if (playGrid) playGrid.innerHTML = '<p>Error loading plays</p>';
     }
 }
 
@@ -467,6 +432,248 @@ hallStyle.textContent = `
     }
 `;
 document.head.appendChild(hallStyle);
+
+// Add form styles after existing styles
+const formStyles = document.createElement('style');
+formStyles.textContent = `
+    .add-play-form {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .add-play-form h2 {
+        margin-bottom: 2rem;
+        color: #333;
+        text-align: center;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #555;
+        font-weight: 500;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="date"],
+    .form-group input[type="url"] {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+
+    .rating-container {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .star-rating {
+        display: inline-flex;
+        flex-direction: row-reverse;
+        gap: 0.25rem;
+    }
+
+    .star-rating input {
+        display: none;
+    }
+
+    .star-rating label {
+        cursor: pointer;
+        font-size: 1.5rem;
+        color: #ddd;
+        transition: color 0.2s;
+    }
+
+    .star-rating label:hover,
+    .star-rating label:hover ~ label,
+    .star-rating input:checked ~ label {
+        color: #ffd700;
+    }
+
+    .standing-ovation-btn {
+        padding: 0.5rem 1rem;
+        background: #f8f9fa;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .standing-ovation-btn.active {
+        background: #ffd700;
+        border-color: #ffd700;
+    }
+
+    .image-preview {
+        margin-top: 1rem;
+        max-width: 100%;
+        height: 200px;
+        border: 1px dashed #ddd;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+        background-size: cover;
+        background-position: center;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .submit-btn,
+    .cancel-btn {
+        flex: 1;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .submit-btn {
+        background: #1a73e8;
+        color: white;
+    }
+
+    .submit-btn:hover {
+        background: #1557b0;
+    }
+
+    .cancel-btn {
+        background: #f1f3f4;
+        color: #333;
+    }
+
+    .cancel-btn:hover {
+        background: #ddd;
+    }
+
+    @media (max-width: 600px) {
+        .add-play-form {
+            margin: 1rem;
+            padding: 1rem;
+        }
+
+        .rating-container {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+    }
+`;
+document.head.appendChild(formStyles);
+
+// Add form handling functions
+function showAddPlayForm() {
+    document.querySelector('.play-grid').style.display = 'none';
+    document.querySelector('.calendar-container').style.display = 'none';
+    document.querySelector('.add-play-form').style.display = 'block';
+    setupFormHandlers();
+}
+
+function hideAddPlayForm() {
+    document.querySelector('.add-play-form').style.display = 'none';
+    document.querySelector('.play-grid').style.display = 'grid';
+    displayPlays('all');
+}
+
+function setupFormHandlers() {
+    const form = document.getElementById('addPlayForm');
+    const imageInput = document.getElementById('playImage');
+    const imagePreview = document.querySelector('.image-preview');
+    const standingOvationBtn = document.getElementById('standingOvation');
+
+    // Image URL validation and preview
+    imageInput.addEventListener('input', () => {
+        const url = imageInput.value;
+        if (url && isValidUrl(url)) {
+            imagePreview.style.backgroundImage = `url(${url})`;
+            imagePreview.textContent = '';
+        } else {
+            imagePreview.style.backgroundImage = 'none';
+            imagePreview.textContent = 'Image preview will appear here';
+        }
+    });
+
+    // Standing ovation toggle
+    standingOvationBtn.addEventListener('click', () => {
+        const isActive = standingOvationBtn.classList.toggle('active');
+        document.querySelectorAll('.star-rating input').forEach(input => {
+            input.checked = false;
+            input.disabled = isActive;
+        });
+    });
+
+    // Form submission
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Disable submit button to prevent double submission
+        const submitButton = form.querySelector('.submit-btn');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Adding...';
+        
+        try {
+            // Get the selected rating
+            const selectedRating = form.querySelector('input[name="rating"]:checked');
+            const rating = standingOvationBtn.classList.contains('active') ? 5 : 
+                          (selectedRating ? parseFloat(selectedRating.value) : null);
+
+            const formData = {
+                name: form.playName.value,
+                date: form.playDate.value,
+                theatre: form.playTheatre.value || null,
+                rating: rating,
+                image: form.playImage.value && isValidUrl(form.playImage.value) ? form.playImage.value : null
+            };
+
+            await addPlay(formData);
+            console.log('Play added successfully');
+            form.reset();
+            hideAddPlayForm();
+            displayPlays('all');
+        } catch (error) {
+            console.error('Error adding play:', error);
+            if (error.message.includes('Must be logged in')) {
+                alert('Please sign in to add plays');
+            } else {
+                alert('Error adding play: ' + error.message);
+            }
+        } finally {
+            // Re-enable submit button
+            submitButton.disabled = false;
+            submitButton.textContent = 'Add Play';
+        }
+    });
+}
+
+function isValidUrl(string) {
+    try {
+        new URL(string);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
 
 // Load all plays when the page loads
 document.addEventListener('DOMContentLoaded', () => {
