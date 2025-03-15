@@ -86,9 +86,16 @@ function createPlayCard(play) {
     
     playCard.innerHTML = `
         <div class="play-card-content">
-            <img src="${play.image || 'https://placehold.co/400x300?text=No+Image'}" 
-                 alt="${play.name}" 
-                 loading="lazy">
+            <div class="image-container">
+                <img src="${play.image || 'https://placehold.co/400x300?text=No+Image'}" 
+                     alt="${play.name}" 
+                     loading="lazy">
+                <button class="edit-icon" onclick="editPlay('${play.id}')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                    </svg>
+                </button>
+            </div>
             <h3>${play.name}</h3>
             <p>Theatre: ${play.theatre || 'TBA'}</p>
             <p>Rating: ${play.rating || 'Not Rated'}</p>
@@ -109,9 +116,16 @@ function createHallOfFameCard(play, isShame = false) {
             <div class="${isShame ? 'hall-of-shame-badge' : 'hall-of-fame-badge'}">
                 ${isShame ? '👎 Hall of Shame' : '⭐ Hall of Fame'}
             </div>
-            <img src="${play.image || 'https://placehold.co/400x300?text=No+Image'}" 
-                 alt="${play.name}" 
-                 loading="lazy">
+            <div class="image-container">
+                <img src="${play.image || 'https://placehold.co/400x300?text=No+Image'}" 
+                     alt="${play.name}" 
+                     loading="lazy">
+                <button class="edit-icon" onclick="editPlay('${play.id}')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                    </svg>
+                </button>
+            </div>
             <h3>${play.name}</h3>
             <p>Theatre: ${play.theatre || 'TBA'}</p>
             <p class="rating">Rating: ${play.rating || 'Not Rated'}</p>
@@ -770,3 +784,467 @@ async function addPlay(formData) {
     if (error) throw error;
     return data;
 }
+
+// Add these styles after the existing play card styles
+const editIconStyles = document.createElement('style');
+editIconStyles.textContent = `
+    .play-card .image-container {
+        position: relative;
+        width: 100%;
+        height: 200px;
+        overflow: hidden;
+    }
+    
+    .play-card .image-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .play-card .edit-icon {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background-color: white;
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        opacity: 0.8;
+        transition: all 0.2s;
+    }
+    
+    .play-card .edit-icon:hover {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    
+    .play-card .edit-icon svg {
+        color: #333;
+    }
+`;
+document.head.appendChild(editIconStyles);
+
+// Placeholder function for edit action
+function editPlay(playId) {
+    console.log(`Editing play with ID: ${playId}`);
+    createModalOverlay(playId);
+}
+
+// Function to create modal overlay
+async function createModalOverlay(playId) {
+    // Fetch play data first
+    const { data: play, error } = await supabaseClient
+        .from('plays')
+        .select('*')
+        .eq('id', playId)
+        .single();
+    
+    if (error) {
+        console.error('Error fetching play:', error);
+        return;
+    }
+    
+    console.log("Play data for editing:", play); // Debug log to see what we're working with
+    
+    // Format the date properly - extract just the YYYY-MM-DD part
+    let formattedDate = '';
+    if (play.date) {
+        // Handle both ISO string format and plain date format
+        formattedDate = play.date.includes('T') ? 
+            play.date.split('T')[0] : 
+            play.date;
+    }
+    console.log("Formatted date for input:", formattedDate);
+    
+    // Create modal overlay
+    const modalOverlay = document.createElement('div');
+    modalOverlay.className = 'modal-overlay';
+    
+    // Create modal content
+    modalOverlay.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Play</h2>
+                <button class="modal-close-btn">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="editPlayForm">
+                    <input type="hidden" id="editPlayId" value="${play.id}">
+                    
+                    <div class="form-group">
+                        <label for="editPlayName">Play Name *</label>
+                        <input type="text" id="editPlayName" name="editPlayName" value="${play.name || ''}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editPlayDate">Date *</label>
+                        <input type="date" id="editPlayDate" name="editPlayDate" value="${formattedDate}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editPlayTheatre">Theatre</label>
+                        <input type="text" id="editPlayTheatre" name="editPlayTheatre" value="${play.theatre || ''}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Rating</label>
+                        <div class="rating-container">
+                            <div class="star-rating edit-rating">
+                                <input type="radio" id="editRating5" name="editRating" value="5" ${play.rating == '5' || play.rating == 5 ? 'checked' : ''}>
+                                <label for="editRating5">★</label>
+                                
+                                <input type="radio" id="editRating4.5" name="editRating" value="4.5" ${play.rating == '4.5' || play.rating == 4.5 ? 'checked' : ''}>
+                                <label for="editRating4.5">★</label>
+                                
+                                <input type="radio" id="editRating4" name="editRating" value="4" ${play.rating == '4' || play.rating == 4 ? 'checked' : ''}>
+                                <label for="editRating4">★</label>
+                                
+                                <input type="radio" id="editRating3.5" name="editRating" value="3.5" ${play.rating == '3.5' || play.rating == 3.5 ? 'checked' : ''}>
+                                <label for="editRating3.5">★</label>
+                                
+                                <input type="radio" id="editRating3" name="editRating" value="3" ${play.rating == '3' || play.rating == 3 ? 'checked' : ''}>
+                                <label for="editRating3">★</label>
+                                
+                                <input type="radio" id="editRating2.5" name="editRating" value="2.5" ${play.rating == '2.5' || play.rating == 2.5 ? 'checked' : ''}>
+                                <label for="editRating2.5">★</label>
+                                
+                                <input type="radio" id="editRating2" name="editRating" value="2" ${play.rating == '2' || play.rating == 2 ? 'checked' : ''}>
+                                <label for="editRating2">★</label>
+                                
+                                <input type="radio" id="editRating1.5" name="editRating" value="1.5" ${play.rating == '1.5' || play.rating == 1.5 ? 'checked' : ''}>
+                                <label for="editRating1.5">★</label>
+                                
+                                <input type="radio" id="editRating1" name="editRating" value="1" ${play.rating == '1' || play.rating == 1 ? 'checked' : ''}>
+                                <label for="editRating1">★</label>
+                            </div>
+                            <div id="editStandingOvation" class="standing-ovation-btn ${play.rating === 'Standing Ovation' ? 'active' : ''}">
+                                Standing Ovation 👏
+                            </div>
+                            <button type="button" id="clearRating" class="clear-rating-btn">Clear Rating</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editPlayImage">Image URL</label>
+                        <input type="url" id="editPlayImage" name="editPlayImage" value="${play.image || ''}" placeholder="https://...">
+                        <div class="image-preview" style="${play.image ? `background-image: url(${play.image}); background-size: cover; background-position: center; color: transparent;` : ''}">${play.image ? '' : 'Image preview will appear here'}</div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="save-btn">Save Changes</button>
+                        <button type="button" class="delete-btn">Delete Play</button>
+                        <button type="button" class="cancel-btn">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    // Add modal to body
+    document.body.appendChild(modalOverlay);
+    
+    // Show modal with animation
+    setTimeout(() => {
+        modalOverlay.classList.add('active');
+    }, 10);
+    
+    // Set the rating properly after DOM is attached
+    setTimeout(() => {
+        // Handle rating display
+        if (play.rating) {
+            if (play.rating === 'Standing Ovation') {
+                const standingOvationBtn = document.getElementById('editStandingOvation');
+                if (standingOvationBtn) {
+                    standingOvationBtn.classList.add('active');
+                    // Disable star ratings
+                    modalOverlay.querySelectorAll('.edit-rating input').forEach(input => {
+                        input.disabled = true;
+                    });
+                }
+            } else {
+                // Try to find and check the appropriate rating radio
+                const ratingStr = String(play.rating).replace('.0', ''); // Handle cases like '4.0' -> '4'
+                const ratingOptions = ['1', '1.5', '2', '2.5', '3', '3.5', '4', '4.5', '5'];
+                
+                if (ratingOptions.includes(ratingStr)) {
+                    const ratingInput = document.getElementById(`editRating${ratingStr}`);
+                    if (ratingInput) {
+                        ratingInput.checked = true;
+                    }
+                }
+            }
+        }
+    }, 50);
+    
+    // Close modal function
+    function closeModal() {
+        modalOverlay.classList.remove('active');
+        setTimeout(() => {
+            modalOverlay.remove();
+        }, 300); // Match transition duration
+    }
+    
+    // Setup event listeners
+    const closeBtn = modalOverlay.querySelector('.modal-close-btn');
+    const cancelBtn = modalOverlay.querySelector('.cancel-btn');
+    const deleteBtn = modalOverlay.querySelector('.delete-btn');
+    const clearRatingBtn = modalOverlay.querySelector('#clearRating');
+    const editForm = modalOverlay.querySelector('#editPlayForm');
+    const imageInput = modalOverlay.querySelector('#editPlayImage');
+    const imagePreview = modalOverlay.querySelector('.image-preview');
+    const standingOvationBtn = modalOverlay.querySelector('#editStandingOvation');
+    
+    // Close modal events
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    
+    // Close on outside click
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            closeModal();
+        }
+    });
+    
+    // Image preview functionality
+    imageInput.addEventListener('input', () => {
+        const url = imageInput.value;
+        if (url && isValidUrl(url)) {
+            const img = new Image();
+            img.onload = () => {
+                imagePreview.style.backgroundImage = `url(${url})`;
+                imagePreview.style.backgroundSize = 'cover';
+                imagePreview.style.backgroundPosition = 'center';
+                imagePreview.textContent = '';
+            };
+            img.onerror = () => {
+                imagePreview.style.backgroundImage = 'none';
+                imagePreview.textContent = 'Invalid image URL';
+            };
+            img.src = url;
+        } else {
+            imagePreview.style.backgroundImage = 'none';
+            imagePreview.textContent = 'Image preview will appear here';
+        }
+    });
+    
+    // Standing ovation toggle
+    standingOvationBtn.addEventListener('click', () => {
+        const isActive = standingOvationBtn.classList.toggle('active');
+        modalOverlay.querySelectorAll('.edit-rating input').forEach(input => {
+            input.checked = false;
+            input.disabled = isActive;
+        });
+    });
+    
+    // Clear rating button
+    clearRatingBtn.addEventListener('click', () => {
+        standingOvationBtn.classList.remove('active');
+        modalOverlay.querySelectorAll('.edit-rating input').forEach(input => {
+            input.checked = false;
+            input.disabled = false;
+        });
+    });
+    
+    // Delete play
+    deleteBtn.addEventListener('click', async () => {
+        if (confirm('Are you sure you want to delete this play? This action cannot be undone.')) {
+            try {
+                const { error } = await supabaseClient
+                    .from('plays')
+                    .delete()
+                    .eq('id', play.id);
+                    
+                if (error) throw error;
+                
+                closeModal();
+                displayPlays(document.querySelector('.nav-link.active').id.replace('PlaysLink', ''));
+            } catch (error) {
+                console.error('Error deleting play:', error);
+                alert('Error deleting play: ' + error.message);
+            }
+        }
+    });
+    
+    // Handle form submission
+    editForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const submitBtn = modalOverlay.querySelector('.save-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+        
+        try {
+            const selectedRating = modalOverlay.querySelector('input[name="editRating"]:checked');
+            let rating = null;
+            
+            if (standingOvationBtn.classList.contains('active')) {
+                rating = 'Standing Ovation';
+            } else if (selectedRating) {
+                rating = parseFloat(selectedRating.value);
+            }
+            
+            const updatedPlay = {
+                name: modalOverlay.querySelector('#editPlayName').value,
+                date: modalOverlay.querySelector('#editPlayDate').value,
+                theatre: modalOverlay.querySelector('#editPlayTheatre').value || null,
+                rating: rating,
+                image: modalOverlay.querySelector('#editPlayImage').value || null
+            };
+            
+            const { error } = await supabaseClient
+                .from('plays')
+                .update(updatedPlay)
+                .eq('id', play.id);
+                
+            if (error) throw error;
+            
+            closeModal();
+            displayPlays(document.querySelector('.nav-link.active').id.replace('PlaysLink', ''));
+        } catch (error) {
+            console.error('Error updating play:', error);
+            alert('Error updating play: ' + error.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Save Changes';
+        }
+    });
+}
+
+// Add modal styles
+const modalStyles = document.createElement('style');
+modalStyles.textContent = `
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+        padding: 20px;
+    }
+    
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .modal-content {
+        background-color: white;
+        border-radius: 8px;
+        max-width: 600px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        transform: translateY(20px);
+        transition: transform 0.3s ease;
+    }
+    
+    .modal-overlay.active .modal-content {
+        transform: translateY(0);
+    }
+    
+    .modal-header {
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #eee;
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 1;
+    }
+    
+    .modal-header h2 {
+        margin: 0;
+        color: #333;
+        font-size: 1.5rem;
+    }
+    
+    .modal-close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #666;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s;
+    }
+    
+    .modal-close-btn:hover {
+        background-color: #f0f0f0;
+        color: #333;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    /* Edit form specific styles */
+    .save-btn {
+        background-color: #1a73e8;
+        color: white;
+    }
+    
+    .save-btn:hover {
+        background-color: #1557b0;
+    }
+    
+    .delete-btn {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .delete-btn:hover {
+        background-color: #c82333;
+    }
+    
+    .clear-rating-btn {
+        padding: 0.5rem 1rem;
+        background: #f8f9fa;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .clear-rating-btn:hover {
+        background-color: #e9ecef;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+        .modal-content {
+            border-radius: 0;
+            max-height: 100vh;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .form-actions button {
+            margin-bottom: 0.5rem;
+        }
+    }
+`;
+document.head.appendChild(modalStyles);
