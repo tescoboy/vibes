@@ -131,9 +131,31 @@ function toggleHallView() {
 
 // Function to display plays
 async function displayPlays(section = 'all') {
+    console.log("displayPlays called with section:", section); // Debug log
     const playGrid = document.querySelector('.play-grid');
     const calendarContainer = document.querySelector('.calendar-container');
-    playGrid.innerHTML = '';
+    
+    // Handle dashboard separately
+    if (section === 'dashboard') {
+        console.log("Displaying dashboard"); // Debug log
+        // Update active nav link
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        document.getElementById('dashboardLink').classList.add('active');
+        
+        // Hide other containers
+        if (calendarContainer) calendarContainer.style.display = 'none';
+        if (playGrid) playGrid.style.display = 'grid'; // Changed to ensure grid is visible
+        
+        // Display dashboard
+        await displayDashboard(); // Added await
+        return;
+    }
+
+    // Clear existing content for non-dashboard sections
+    if (playGrid) playGrid.innerHTML = '';
+    if (calendarContainer) calendarContainer.style.display = 'none';
 
     // Update active nav link
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -147,17 +169,18 @@ async function displayPlays(section = 'all') {
         document.getElementById(`${section}PlaysLink`).classList.add('active');
     }
 
-    // Show/hide calendar toggle for upcoming and seen plays
+    // Show/hide relevant toggles
     const calendarToggle = document.querySelector('.calendar-toggle');
+    const hallToggle = document.querySelector('.hall-toggle');
     if (calendarToggle) {
         calendarToggle.style.display = (section === 'upcoming' || section === 'seen') ? 'block' : 'none';
     }
-
-    // Show/hide hall toggle
-    const hallToggle = document.querySelector('.hall-toggle');
     if (hallToggle) {
         hallToggle.style.display = (section === 'hallOfFame' || section === 'hallOfShame') ? 'block' : 'none';
     }
+
+    // Ensure play grid is visible
+    if (playGrid) playGrid.style.display = 'grid';
 
     try {
         let plays;
@@ -179,30 +202,233 @@ async function displayPlays(section = 'all') {
         }
         
         if (!plays || plays.length === 0) {
-            playGrid.innerHTML = `<p>No ${section.replace(/([A-Z])/g, ' $1').toLowerCase()} plays available</p>`;
+            if (playGrid) playGrid.innerHTML = `<p>No ${section.replace(/([A-Z])/g, ' $1').toLowerCase()} plays available</p>`;
             return;
         }
 
         if ((section === 'upcoming' || section === 'seen') && isCalendarView) {
-            playGrid.style.display = 'none';
-            calendarContainer.style.display = 'block';
-            renderCalendar(plays);
-        } else {
-            playGrid.style.display = 'grid';
+            if (playGrid) playGrid.style.display = 'none';
             if (calendarContainer) {
-                calendarContainer.style.display = 'none';
+                calendarContainer.style.display = 'block';
+                renderCalendar(plays);
             }
-            plays.forEach(play => {
-                const playCard = (section === 'hallOfFame' || section === 'hallOfShame') ? 
-                    createHallOfFameCard(play, section === 'hallOfShame') : 
-                    createPlayCard(play);
-                playGrid.appendChild(playCard);
-            });
+        } else {
+            if (playGrid) {
+                playGrid.style.display = 'grid';
+                plays.forEach(play => {
+                    const playCard = (section === 'hallOfFame' || section === 'hallOfShame') ? 
+                        createHallOfFameCard(play, section === 'hallOfShame') : 
+                        createPlayCard(play);
+                    playGrid.appendChild(playCard);
+                });
+            }
+            if (calendarContainer) calendarContainer.style.display = 'none';
         }
 
     } catch (error) {
         console.error('Error displaying plays:', error);
-        playGrid.innerHTML = '<p>Error loading plays</p>';
+        if (playGrid) playGrid.innerHTML = '<p>Error loading plays</p>';
+    }
+}
+
+// Function to display dashboard
+async function displayDashboard() {
+    console.log("displayDashboard function called"); // Debug log
+    const playGrid = document.querySelector('.play-grid');
+    
+    // Ensure playGrid exists
+    if (!playGrid) {
+        console.error("Play grid element not found");
+        return;
+    }
+
+    console.log("Setting dashboard HTML"); // Debug log
+    playGrid.innerHTML = `
+        <div class="dashboard-container">
+            <div class="stats-grid">
+                <div class="stat-card" id="total-seen">
+                    <div class="stat-icon">👁️</div>
+                    <div class="stat-label">Total Plays Seen</div>
+                    <div class="stat-number">...</div>
+                </div>
+                <div class="stat-card" id="upcoming">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-label">Upcoming Shows</div>
+                    <div class="stat-number">...</div>
+                </div>
+                <div class="stat-card" id="this-year">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-label">This Year's Shows</div>
+                    <div class="stat-number">...</div>
+                </div>
+                <div class="stat-card next-play-card" id="next-play">
+                    <div class="stat-icon">🎭</div>
+                    <div class="stat-label">Next Play</div>
+                    <div class="next-play-info">Loading...</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add dashboard styles
+    if (!document.getElementById('dashboard-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'dashboard-styles';
+        styles.textContent = `
+            .dashboard-container {
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 2rem;
+            }
+
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 2rem;
+                margin: 2rem auto;
+                padding: 0 2rem;
+                max-width: 1600px;
+            }
+
+            .stat-card {
+                background: white;
+                border-radius: 16px;
+                padding: 2rem;
+                text-align: center;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                transition: all 0.3s ease;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                aspect-ratio: 1;
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .stat-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: linear-gradient(90deg, #4285f4, #34a853);
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .stat-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            }
+
+            .stat-card:hover::before {
+                opacity: 1;
+            }
+
+            .stat-icon {
+                font-size: 2.5rem;
+                margin-bottom: 1rem;
+            }
+
+            .stat-number {
+                font-size: 3.5rem;
+                font-weight: bold;
+                margin: 0.5rem 0;
+                background: linear-gradient(45deg, #4285f4, #34a853);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                line-height: 1.2;
+            }
+
+            .stat-label {
+                font-size: 1.2rem;
+                color: #666;
+                margin-bottom: 0.5rem;
+                font-weight: 500;
+            }
+
+            .next-play-card {
+                background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            }
+
+            .next-play-info {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: center;
+                width: 100%;
+            }
+
+            .next-play-name {
+                font-size: 1.4rem;
+                font-weight: 600;
+                color: #333;
+                line-height: 1.3;
+            }
+
+            .next-play-date {
+                color: #4285f4;
+                font-weight: 600;
+                font-size: 1.1rem;
+            }
+
+            .next-play-theatre {
+                color: #666;
+                font-size: 1rem;
+            }
+
+            @media (max-width: 1200px) {
+                .stats-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 2rem;
+                    padding: 0 1rem;
+                }
+            }
+
+            @media (max-width: 600px) {
+                .stats-grid {
+                    grid-template-columns: 1fr;
+                    max-width: 300px;
+                    margin: 2rem auto;
+                }
+            }
+        `;
+        document.head.appendChild(styles);
+    }
+
+    // Fetch and update stats
+    try {
+        console.log("Fetching dashboard stats"); // Debug log
+        const stats = await fetchDashboardStats();
+        console.log("Received stats:", stats); // Debug log
+
+        document.querySelector('#total-seen .stat-number').textContent = stats.totalSeen;
+        document.querySelector('#upcoming .stat-number').textContent = stats.upcoming;
+        document.querySelector('#this-year .stat-number').textContent = stats.thisYear;
+        
+        const nextPlayElement = document.querySelector('#next-play .next-play-info');
+        if (stats.nextPlay) {
+            const date = new Date(stats.nextPlay.date).toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            nextPlayElement.innerHTML = `
+                <div class="next-play-name">${stats.nextPlay.name}</div>
+                <div class="next-play-date">${date}</div>
+                ${stats.nextPlay.theatre ? `<div class="next-play-theatre">at ${stats.nextPlay.theatre}</div>` : ''}
+            `;
+        } else {
+            nextPlayElement.textContent = 'No upcoming plays';
+        }
+    } catch (error) {
+        console.error('Error displaying dashboard:', error);
+        document.querySelector('.dashboard-container').innerHTML = '<p>Error loading dashboard</p>';
     }
 }
 

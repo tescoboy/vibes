@@ -10,7 +10,13 @@
     <nav>
         <div class="nav-content">
             <div class="site-title">Theatre Plays</div>
+            <button class="burger-menu" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
             <div class="nav-links">
+                <a class="nav-link" id="dashboardLink" onclick="displayPlays('dashboard')">Dashboard</a>
                 <a class="nav-link active" id="allPlaysLink" onclick="displayPlays('all')">All Plays</a>
                 <a class="nav-link" id="upcomingPlaysLink" onclick="displayPlays('upcoming')">Upcoming Plays</a>
                 <a class="nav-link" id="seenPlaysLink" onclick="displayPlays('seen')">Seen Plays</a>
@@ -40,5 +46,29 @@
     <script src="/database.js"></script>
     <script src="/calendar-view.js"></script>
     <script src="/auth.js"></script>
+    <script>
+        function toggleMobileMenu() {
+            document.querySelector('.nav-links').classList.toggle('active');
+            document.querySelector('.burger-menu').classList.toggle('active');
+        }
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const nav = document.querySelector('nav');
+            const burger = document.querySelector('.burger-menu');
+            if (!nav.contains(e.target) && document.querySelector('.nav-links').classList.contains('active')) {
+                document.querySelector('.nav-links').classList.remove('active');
+                burger.classList.remove('active');
+            }
+        });
+
+        // Close mobile menu when clicking a nav link
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                document.querySelector('.nav-links').classList.remove('active');
+                document.querySelector('.burger-menu').classList.remove('active');
+            });
+        });
+    </script>
 </body>
 </html> 
