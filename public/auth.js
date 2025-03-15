@@ -84,6 +84,33 @@ function createPlayCard(play) {
     const playCard = document.createElement('div');
     playCard.className = 'play-card';
     
+    // Generate the moon rating HTML for display
+    let ratingHtml = '';
+    if (play.rating) {
+        if (play.rating === 'Standing Ovation') {
+            ratingHtml = '<span class="standing-ovation-display"><i class="fa-solid fa-person"></i> Standing Ovation</span>';
+        } else {
+            ratingHtml = '<div class="rating-display"><div class="moon-display">';
+            const rating = parseFloat(play.rating);
+            const fullMoons = Math.floor(rating);
+            const hasHalfMoon = rating % 1 !== 0;
+            
+            // Add full moons
+            for (let i = 0; i < fullMoons; i++) {
+                ratingHtml += '<span class="moon moon-full"><i class="fa-solid fa-moon"></i></span>';
+            }
+            
+            // Add half moon if needed
+            if (hasHalfMoon) {
+                ratingHtml += '<span class="moon moon-half"><i class="fa-regular fa-moon"></i></span>';
+            }
+            
+            ratingHtml += '</div></div>';
+        }
+    } else {
+        ratingHtml = 'Not Rated';
+    }
+    
     playCard.innerHTML = `
         <div class="play-card-content">
             <div class="image-container">
@@ -98,7 +125,7 @@ function createPlayCard(play) {
             </div>
             <h3>${play.name}</h3>
             <p>Theatre: ${play.theatre || 'TBA'}</p>
-            <p>Rating: ${play.rating || 'Not Rated'}</p>
+            <p>Rating: ${ratingHtml}</p>
             <p>Date: ${new Date(play.date).toLocaleDateString('en-GB') || 'TBA'}</p>
         </div>
     `;
@@ -110,6 +137,33 @@ function createPlayCard(play) {
 function createHallOfFameCard(play, isShame = false) {
     const playCard = document.createElement('div');
     playCard.className = `play-card ${isShame ? 'hall-of-shame' : 'hall-of-fame'}`;
+    
+    // Generate the moon rating HTML with Font Awesome
+    let ratingHtml = '';
+    if (play.rating) {
+        if (play.rating === 'Standing Ovation') {
+            ratingHtml = '<span class="standing-ovation-display"><i class="fa-solid fa-person"></i> Standing Ovation</span>';
+        } else {
+            ratingHtml = '<div class="rating-display">';
+            const rating = parseFloat(play.rating);
+            const fullMoons = Math.floor(rating);
+            const hasHalfMoon = rating % 1 !== 0;
+            
+            // Add full moons
+            for (let i = 0; i < fullMoons; i++) {
+                ratingHtml += '<span class="moon moon-full"><i class="fa-solid fa-moon"></i></span>';
+            }
+            
+            // Add half moon if needed
+            if (hasHalfMoon) {
+                ratingHtml += '<span class="moon moon-half"><i class="fa-regular fa-moon"></i></span>';
+            }
+            
+            ratingHtml += '</div>';
+        }
+    } else {
+        ratingHtml = 'Not Rated';
+    }
     
     playCard.innerHTML = `
         <div class="play-card-content">
@@ -128,7 +182,7 @@ function createHallOfFameCard(play, isShame = false) {
             </div>
             <h3>${play.name}</h3>
             <p>Theatre: ${play.theatre || 'TBA'}</p>
-            <p class="rating">Rating: ${play.rating || 'Not Rated'}</p>
+            <p class="rating">Rating: ${ratingHtml}</p>
             <p>Date: ${new Date(play.date).toLocaleDateString('en-GB') || 'TBA'}</p>
         </div>
     `;
@@ -145,46 +199,34 @@ function toggleHallView() {
 
 // Function to display plays
 async function displayPlays(section = 'all') {
-    console.log("displayPlays called with section:", section); // Debug log
+    console.log("displayPlays called with section:", section);
     const playGrid = document.querySelector('.play-grid');
     const calendarContainer = document.querySelector('.calendar-container');
     const addPlayForm = document.querySelector('.add-play-form');
     
-    // Hide the add play form regardless of which section we're going to
+    // Hide the add play form
     if (addPlayForm) addPlayForm.style.display = 'none';
     
-    // Handle dashboard separately
-    if (section === 'dashboard') {
-        console.log("Displaying dashboard"); // Debug log
-        // Update active nav link
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-        });
-        document.getElementById('dashboardLink').classList.add('active');
-        
-        // Hide other containers
-        if (calendarContainer) calendarContainer.style.display = 'none';
-        if (playGrid) playGrid.style.display = 'grid'; // Changed to ensure grid is visible
-        
-        // Display dashboard
-        await displayDashboard(); // Added await
-        return;
-    }
-
-    // Clear existing content for non-dashboard sections
-    if (playGrid) playGrid.innerHTML = '';
-    if (calendarContainer) calendarContainer.style.display = 'none';
-
-    // Update active nav link
+    // Update active nav links - with null checks
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
     });
     
-    // Set active nav and show/hide toggles
-    if (section === 'hallOfShame') {
-        document.getElementById('hallOfFamePlaysLink').classList.add('active');
-    } else {
-        document.getElementById(`${section}PlaysLink`).classList.add('active');
+    try {
+        // Set active nav with null checks
+        if (section === 'dashboard') {
+            const dashboardLink = document.getElementById('dashboardLink');
+            if (dashboardLink) dashboardLink.classList.add('active');
+        } else if (section === 'hallOfShame') {
+            const hallOfFameLink = document.getElementById('hallOfFamePlaysLink');
+            if (hallOfFameLink) hallOfFameLink.classList.add('active');
+        } else {
+            const navLink = document.getElementById(`${section}PlaysLink`);
+            if (navLink) navLink.classList.add('active');
+        }
+    } catch (e) {
+        console.error("Error updating navigation:", e);
+        // Continue with the function even if navigation update fails
     }
 
     // Show/hide relevant toggles
@@ -905,39 +947,8 @@ async function createModalOverlay(playId) {
 
                     <div class="form-group">
                         <label>Rating</label>
-                        <div class="rating-container">
-                            <div class="star-rating edit-rating">
-                                <input type="radio" id="editRating5" name="editRating" value="5" ${play.rating == '5' || play.rating == 5 ? 'checked' : ''}>
-                                <label for="editRating5">★</label>
-                                
-                                <input type="radio" id="editRating4.5" name="editRating" value="4.5" ${play.rating == '4.5' || play.rating == 4.5 ? 'checked' : ''}>
-                                <label for="editRating4.5">★</label>
-                                
-                                <input type="radio" id="editRating4" name="editRating" value="4" ${play.rating == '4' || play.rating == 4 ? 'checked' : ''}>
-                                <label for="editRating4">★</label>
-                                
-                                <input type="radio" id="editRating3.5" name="editRating" value="3.5" ${play.rating == '3.5' || play.rating == 3.5 ? 'checked' : ''}>
-                                <label for="editRating3.5">★</label>
-                                
-                                <input type="radio" id="editRating3" name="editRating" value="3" ${play.rating == '3' || play.rating == 3 ? 'checked' : ''}>
-                                <label for="editRating3">★</label>
-                                
-                                <input type="radio" id="editRating2.5" name="editRating" value="2.5" ${play.rating == '2.5' || play.rating == 2.5 ? 'checked' : ''}>
-                                <label for="editRating2.5">★</label>
-                                
-                                <input type="radio" id="editRating2" name="editRating" value="2" ${play.rating == '2' || play.rating == 2 ? 'checked' : ''}>
-                                <label for="editRating2">★</label>
-                                
-                                <input type="radio" id="editRating1.5" name="editRating" value="1.5" ${play.rating == '1.5' || play.rating == 1.5 ? 'checked' : ''}>
-                                <label for="editRating1.5">★</label>
-                                
-                                <input type="radio" id="editRating1" name="editRating" value="1" ${play.rating == '1' || play.rating == 1 ? 'checked' : ''}>
-                                <label for="editRating1">★</label>
-                            </div>
-                            <div id="editStandingOvation" class="standing-ovation-btn ${play.rating === 'Standing Ovation' ? 'active' : ''}">
-                                Standing Ovation 👏
-                            </div>
-                            <button type="button" id="clearRating" class="clear-rating-btn">Clear Rating</button>
+                        <div class="edit-rating-container">
+                            <!-- The createEditMoonRating function will fill this container -->
                         </div>
                     </div>
 
@@ -1005,7 +1016,6 @@ async function createModalOverlay(playId) {
     const closeBtn = modalOverlay.querySelector('.modal-close-btn');
     const cancelBtn = modalOverlay.querySelector('.cancel-btn');
     const deleteBtn = modalOverlay.querySelector('.delete-btn');
-    const clearRatingBtn = modalOverlay.querySelector('#clearRating');
     const editForm = modalOverlay.querySelector('#editPlayForm');
     const imageInput = modalOverlay.querySelector('#editPlayImage');
     const imagePreview = modalOverlay.querySelector('.image-preview');
@@ -1051,35 +1061,6 @@ async function createModalOverlay(playId) {
             input.checked = false;
             input.disabled = isActive;
         });
-    });
-    
-    // Clear rating button
-    clearRatingBtn.addEventListener('click', () => {
-        standingOvationBtn.classList.remove('active');
-        modalOverlay.querySelectorAll('.edit-rating input').forEach(input => {
-            input.checked = false;
-            input.disabled = false;
-        });
-    });
-    
-    // Delete play
-    deleteBtn.addEventListener('click', async () => {
-        if (confirm('Are you sure you want to delete this play? This action cannot be undone.')) {
-            try {
-                const { error } = await supabaseClient
-                    .from('plays')
-                    .delete()
-                    .eq('id', play.id);
-                    
-                if (error) throw error;
-                
-                closeModal();
-                displayPlays(document.querySelector('.nav-link.active').id.replace('PlaysLink', ''));
-            } catch (error) {
-                console.error('Error deleting play:', error);
-                alert('Error deleting play: ' + error.message);
-            }
-        }
     });
     
     // Handle form submission
@@ -1421,5 +1402,267 @@ async function renderUnifiedCalendar(plays) {
     }
 }
 
-// Make sure the calendar styles are included
-// If not already added, add them here
+// Initialize the moon rating system
+function initMoonRating() {
+    // For the Add Play form
+    setupMoonRating(
+        document.querySelector('.add-play-form .moon-rating-new'), 
+        document.querySelector('.add-play-form #ratingValue')
+    );
+}
+
+// Setup function for the moon rating system
+function setupMoonRating(container, hiddenInput) {
+    console.log("Setting up moon rating", container, hiddenInput);
+    
+    const moonItems = container.querySelectorAll('.moon-item');
+    const standingOvation = container.querySelector('.standing-ovation-btn');
+    let selectedRating = '';
+    
+    console.log("Found moon items:", moonItems.length);
+    
+    // Reset all moons to default state (ensure they start grey)
+    moonItems.forEach(moon => {
+        moon.classList.remove('selected', 'half-selected');
+        moon.querySelector('i').style.color = '#ccc'; // Force grey color
+    });
+    
+    // Reset the rating display
+    function resetRating() {
+        moonItems.forEach(item => {
+            item.classList.remove('selected', 'half-selected');
+            const icon = item.querySelector('i');
+            icon.classList.remove('fa-regular');
+            icon.classList.add('fa-solid');
+            icon.style.color = '#ccc';
+        });
+        standingOvation.classList.remove('selected');
+        hiddenInput.value = '';
+        selectedRating = '';
+    }
+    
+    // Update the visual display based on the selected rating
+    function updateDisplay(rating) {
+        resetRating();
+        
+        if (rating === 'Standing Ovation') {
+            standingOvation.classList.add('selected');
+            hiddenInput.value = rating;
+            selectedRating = rating;
+            return;
+        }
+        
+        if (!rating) return;
+        
+        const ratingValue = parseFloat(rating);
+        const fullValue = Math.floor(ratingValue);
+        const hasHalf = ratingValue % 1 !== 0;
+        
+        // Update full moons
+        for (let i = 0; i < fullValue; i++) {
+            moonItems[i].classList.add('selected');
+            moonItems[i].querySelector('i').style.color = '#FFD700'; // Gold color
+        }
+        
+        // Update half moon if needed
+        if (hasHalf && fullValue < moonItems.length) {
+            // Clear the original moon icon and replace with half moon
+            const halfMoonItem = moonItems[fullValue];
+            halfMoonItem.classList.add('half-selected');
+            
+            // Replace the solid moon with regular moon for half rating
+            const icon = halfMoonItem.querySelector('i');
+            icon.classList.remove('fa-solid');
+            icon.classList.add('fa-regular');
+            icon.style.color = '#FFD700'; // Gold color
+        }
+        
+        hiddenInput.value = rating;
+        selectedRating = rating;
+    }
+    
+    // Handle moon clicks - directly attach click handlers
+    moonItems.forEach((moon, index) => {
+        console.log("Attaching handlers to moon", index + 1);
+        
+        moon.addEventListener('click', function() {
+            console.log("Moon clicked:", index + 1);
+            const value = index + 1;
+            
+            // If already selected as full value, change to half value
+            if (selectedRating === value.toString()) {
+                // If clicked the first moon, can't go below 1
+                if (value === 1) {
+                    resetRating(); // Just clear the rating
+                } else {
+                    updateDisplay((value - 0.5).toString());
+                }
+            } 
+            // If already selected as half value, clear the rating
+            else if (selectedRating === (value - 0.5).toString()) {
+                resetRating();
+            }
+            // Otherwise, select the full value
+            else {
+                updateDisplay(value.toString());
+            }
+        });
+    });
+    
+    // Handle standing ovation selection
+    standingOvation.addEventListener('click', function() {
+        console.log("Standing ovation clicked");
+        if (selectedRating === 'Standing Ovation') {
+            resetRating();
+        } else {
+            updateDisplay('Standing Ovation');
+        }
+    });
+    
+    // Initialize in grey state
+    resetRating();
+    
+    return {
+        getValue: () => selectedRating,
+        setValue: (rating) => updateDisplay(rating),
+        reset: resetRating
+    };
+}
+
+// Function to create a similar moon rating for the edit modal
+function createEditMoonRating(container, initialValue) {
+    // Very similar to setupMoonRating, but for the edit modal
+    const editMoonHTML = `
+        <div class="moon-rating-new">
+            <div class="moon-rating-wrapper">
+                <div class="moon-item" data-value="1">
+                    <i class="fa-solid fa-moon"></i>
+                </div>
+                <div class="moon-item" data-value="2">
+                    <i class="fa-solid fa-moon"></i>
+                </div>
+                <div class="moon-item" data-value="3">
+                    <i class="fa-solid fa-moon"></i>
+                </div>
+                <div class="moon-item" data-value="4">
+                    <i class="fa-solid fa-moon"></i>
+                </div>
+                <div class="moon-item" data-value="5">
+                    <i class="fa-solid fa-moon"></i>
+                </div>
+            </div>
+            <div class="standing-ovation-btn" data-value="Standing Ovation">
+                <i class="fa-solid fa-person"></i> Standing Ovation
+            </div>
+        </div>
+        <input type="hidden" id="editRatingValue" name="editRating" value="${initialValue || ''}">
+        <div class="rating-hint">Click a moon to select rating. Click the same moon again for half rating.</div>
+    `;
+    
+    container.innerHTML = editMoonHTML;
+    
+    const ratingControl = setupMoonRating(
+        container.querySelector('.moon-rating-new'),
+        container.querySelector('#editRatingValue')
+    );
+    
+    if (initialValue) {
+        ratingControl.setValue(initialValue);
+    }
+    
+    return ratingControl;
+}
+
+// When creating the edit modal, use this function:
+function createModalOverlay(play) {
+    // ... existing code ...
+    
+    // For the rating section in the edit modal
+    const ratingContainer = modal.querySelector('.edit-rating-container');
+    const ratingControl = createEditMoonRating(ratingContainer, play.rating);
+    
+    // ... existing code ...
+    
+    // When saving the edited play
+    saveButton.addEventListener('click', async () => {
+        // ... existing code ...
+        const updatedPlay = {
+            // ... other properties ...
+            rating: ratingControl.getValue() || null,
+            // ... other properties ...
+        };
+        // ... existing save logic ...
+    });
+}
+
+// Initialize the moon rating when document is ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM loaded, initializing moon rating");
+    // Initialize the moon rating for the add play form
+    const moonRatingContainer = document.querySelector('.moon-rating-new');
+    const hiddenInput = document.getElementById('ratingValue');
+    
+    // Debug
+    console.log("Moon container:", moonRatingContainer);
+    console.log("Hidden input:", hiddenInput);
+    
+    if (moonRatingContainer && hiddenInput) {
+        // Setup moon rating system
+        setupMoonRating(moonRatingContainer, hiddenInput);
+    } else {
+        console.error("Could not find moon rating elements");
+    }
+    
+    // Add this - Make sure the form submission includes the rating
+    const addPlayForm = document.getElementById('addPlayForm');
+    if (addPlayForm) {
+        addPlayForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            try {
+                // Get the rating value
+                const ratingValue = document.getElementById('ratingValue').value;
+                console.log("Submitting form with rating:", ratingValue);
+                
+                // Create play object from form
+                const play = {
+                    name: document.getElementById('playName').value,
+                    date: document.getElementById('playDate').value,
+                    theatre: document.getElementById('playTheatre').value || null,
+                    rating: ratingValue || null,
+                    image: document.getElementById('playImage').value || null
+                };
+                
+                console.log("Submitting play:", play);
+                
+                // Use the dbClient from database.js, which is the correctly initialized Supabase client
+                if (typeof dbClient !== 'undefined') {
+                    console.log("Using dbClient from database.js");
+                    const { data, error } = await dbClient
+                        .from('plays')
+                        .insert([play]);
+                    
+                    if (error) {
+                        console.error("Database insert error:", error);
+                        throw new Error(`Database insert error: ${error.message}`);
+                    }
+                    
+                    console.log("Play added successfully:", data);
+                } else {
+                    throw new Error("Database client (dbClient) not available in global scope");
+                }
+                
+                // Reset form and hide
+                addPlayForm.reset();
+                hideAddPlayForm();
+                
+                // Refresh plays
+                displayPlays('all');
+                
+            } catch (error) {
+                console.error('Error adding play:', error);
+                alert(`Failed to add play: ${error.message}`);
+            }
+        });
+    }
+});

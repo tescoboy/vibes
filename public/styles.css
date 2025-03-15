@@ -541,3 +541,90 @@ body {
 }
 
 /* Calendar styles should be included from your existing code */
+
+/* Modern Moon Rating System */
+.moon-rating-new {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.moon-rating-wrapper {
+    display: flex;
+    gap: 8px;
+}
+
+.moon-item {
+    font-size: 28px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.moon-item i {
+    color: #ccc !important; /* Force grey color by default */
+    transition: color 0.2s;
+}
+
+.moon-item.selected i {
+    color: #FFD700 !important; /* Gold color for selected */
+}
+
+.moon-item.half-selected::after {
+    content: none;
+}
+
+.moon-item.half-selected i {
+    opacity: 1;
+}
+
+.rating-hint {
+    font-size: 12px;
+    color: #777;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+.standing-ovation-btn {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #ddd;
+    user-select: none;
+}
+
+.standing-ovation-btn.selected {
+    background: #FFD700;
+    color: #333;
+    border-color: #FFD700;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.standing-ovation-btn i {
+    margin-right: 8px;
+}
+
+/* For read-only display in cards */
+.rating-display {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.moon-display {
+    display: flex;
+    gap: 3px;
+}
+
+.moon-full i {
+    color: #FFD700; /* Gold color for filled moons in display */
+}
+
+.moon-half i {
+    color: #FFD700; /* Gold color for half moons in display */
+}

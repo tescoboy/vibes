@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Theatre Plays</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <nav>
@@ -62,18 +63,30 @@
                 <div class="form-group">
                     <label for="playRating">Rating (optional)</label>
                     <div class="rating-container">
-                        <div class="star-rating">
-                            <input type="radio" id="rating5" name="rating" value="5"><label for="rating5">★</label>
-                            <input type="radio" id="rating4.5" name="rating" value="4.5"><label for="rating4.5">★</label>
-                            <input type="radio" id="rating4" name="rating" value="4"><label for="rating4">★</label>
-                            <input type="radio" id="rating3.5" name="rating" value="3.5"><label for="rating3.5">★</label>
-                            <input type="radio" id="rating3" name="rating" value="3"><label for="rating3">★</label>
-                            <input type="radio" id="rating2.5" name="rating" value="2.5"><label for="rating2.5">★</label>
-                            <input type="radio" id="rating2" name="rating" value="2"><label for="rating2">★</label>
-                            <input type="radio" id="rating1.5" name="rating" value="1.5"><label for="rating1.5">★</label>
-                            <input type="radio" id="rating1" name="rating" value="1"><label for="rating1">★</label>
+                        <div class="moon-rating-new">
+                            <div class="moon-rating-wrapper">
+                                <div class="moon-item" data-value="1">
+                                    <i class="fa-solid fa-moon"></i>
+                                </div>
+                                <div class="moon-item" data-value="2">
+                                    <i class="fa-solid fa-moon"></i>
+                                </div>
+                                <div class="moon-item" data-value="3">
+                                    <i class="fa-solid fa-moon"></i>
+                                </div>
+                                <div class="moon-item" data-value="4">
+                                    <i class="fa-solid fa-moon"></i>
+                                </div>
+                                <div class="moon-item" data-value="5">
+                                    <i class="fa-solid fa-moon"></i>
+                                </div>
+                            </div>
+                            <div class="standing-ovation-btn" data-value="Standing Ovation">
+                                <i class="fa-solid fa-person"></i> Standing Ovation
+                            </div>
                         </div>
-                        <div id="standingOvation" class="standing-ovation-btn">Standing Ovation 👏</div>
+                        <input type="hidden" id="ratingValue" name="rating" value="">
+                        <div class="rating-hint">Click a moon to select rating. Click the same moon again for half rating.</div>
                     </div>
                 </div>
 
