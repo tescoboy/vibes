@@ -621,7 +621,6 @@ function setupFormHandlers() {
     console.log('Setting up form handlers - start');
     const form = document.getElementById('addPlayForm');
     
-    // Check if form already has handlers
     if (form.dataset.initialized) {
         console.log('Form already initialized, skipping setup');
         return;
@@ -631,8 +630,50 @@ function setupFormHandlers() {
     const imagePreview = document.querySelector('.image-preview');
     const standingOvationBtn = document.getElementById('standingOvation');
 
-    // Mark form as initialized
     form.dataset.initialized = 'true';
+
+    // Reset form state completely
+    function resetForm() {
+        form.reset();
+        imagePreview.style.backgroundImage = 'none';
+        imagePreview.textContent = 'Image preview will appear here';
+        standingOvationBtn.classList.remove('active');
+        form.querySelectorAll('.star-rating input').forEach(input => {
+            input.checked = false;
+            input.disabled = false;
+        });
+    }
+
+    // Image URL validation and preview
+    imageInput.addEventListener('input', () => {
+        const url = imageInput.value;
+        if (url && isValidUrl(url)) {
+            // Test if image loads successfully
+            const img = new Image();
+            img.onload = () => {
+                imagePreview.style.backgroundImage = `url(${url})`;
+                imagePreview.textContent = '';
+            };
+            img.onerror = () => {
+                imagePreview.style.backgroundImage = 'none';
+                imagePreview.textContent = 'Invalid image URL';
+            };
+            img.src = url;
+        } else {
+            imagePreview.style.backgroundImage = 'none';
+            imagePreview.textContent = 'Image preview will appear here';
+        }
+    });
+
+    // Standing ovation toggle
+    standingOvationBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isActive = standingOvationBtn.classList.toggle('active');
+        form.querySelectorAll('.star-rating input').forEach(input => {
+            input.checked = false;
+            input.disabled = isActive;
+        });
+    });
 
     // Form submission with submit lock
     let isSubmitting = false;
@@ -654,7 +695,7 @@ function setupFormHandlers() {
         
         try {
             const selectedRating = form.querySelector('input[name="rating"]:checked');
-            const rating = standingOvationBtn.classList.contains('active') ? 5 : 
+            const rating = standingOvationBtn.classList.contains('active') ? 'Standing Ovation' : 
                           (selectedRating ? parseFloat(selectedRating.value) : null);
 
             const formData = {
@@ -666,15 +707,9 @@ function setupFormHandlers() {
             };
 
             console.log('Submitting form data:', formData);
-            const { data, error } = await supabaseClient
-                .from('plays')
-                .insert([formData])
-                .select();
-
-            if (error) throw error;
-
-            console.log('Play added successfully:', data);
-            form.reset();
+            await addPlay(formData);
+            console.log('Play added successfully');
+            resetForm();  // Use new reset function
             hideAddPlayForm();
             displayPlays('all');
         } catch (error) {
@@ -688,7 +723,22 @@ function setupFormHandlers() {
         }
     });
 
-    // Rest of the handlers...
+    // Reset form when showing
+    showAddPlayForm = () => {
+        const playGrid = document.querySelector('.play-grid');
+        const calendarContainer = document.querySelector('.calendar-container');
+        const addPlayForm = document.querySelector('.add-play-form');
+        
+        if (playGrid) playGrid.style.display = 'none';
+        if (calendarContainer) calendarContainer.style.display = 'none';
+        if (addPlayForm) {
+            addPlayForm.style.display = 'block';
+            resetForm();  // Reset form when showing
+        }
+        
+        setupFormHandlers();
+    };
+
     console.log('Form handlers setup complete');
 }
 
@@ -705,3 +755,18 @@ function isValidUrl(string) {
 document.addEventListener('DOMContentLoaded', () => {
     displayPlays(false);
 });
+
+// Add this function
+async function addPlay(formData) {
+    if (!supabaseClient.auth.getSession()) {
+        throw new Error('Must be logged in to add plays');
+    }
+
+    const { data, error } = await supabaseClient
+        .from('plays')
+        .insert([formData])
+        .select();
+
+    if (error) throw error;
+    return data;
+}
