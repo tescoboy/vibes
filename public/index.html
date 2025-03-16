@@ -109,6 +109,7 @@
     <script src="/database.js"></script>
     <script src="/calendar-view.js"></script>
     <script src="/auth.js"></script>
+    <script src="/toast-notifications.js"></script>
     <script>
         function toggleMobileMenu() {
             document.querySelector('.nav-links').classList.toggle('active');
@@ -130,6 +131,84 @@
             link.addEventListener('click', () => {
                 document.querySelector('.nav-links').classList.remove('active');
                 document.querySelector('.burger-menu').classList.remove('active');
+            });
+        });
+
+        function testToastButton() {
+            console.log('Test button clicked');
+            if (typeof showToast === 'function') {
+                showToast({
+                    title: 'Test Button Toast',
+                    message: 'This is a test from the direct button',
+                    type: 'success',
+                    duration: 3000
+                });
+                console.log('Toast called from test button');
+            } else {
+                console.error('showToast is not available');
+                alert('Toast function not available');
+            }
+        }
+
+        // Global form interceptor that works regardless of how the form is handled
+        document.addEventListener('DOMContentLoaded', function() {
+            // Listen for form submission
+            document.body.addEventListener('submit', function(event) {
+                // If this is our add play form
+                if (event.target.id === 'addPlayForm') {
+                    // Extract the form data
+                    const formData = {
+                        name: document.getElementById('playName').value,
+                        date: document.getElementById('playDate').value,
+                        theatre: document.getElementById('playTheatre').value || null,
+                        rating: document.getElementById('ratingValue').value || null,
+                        image: document.getElementById('playImage')?.value || null
+                    };
+                    
+                    // Set a timeout to show toast after form processing
+                    setTimeout(function() {
+                        try {
+                            // Format date for display
+                            const formattedDate = new Date(formData.date).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric', 
+                                month: 'long',
+                                day: 'numeric'
+                            });
+                            
+                            // Format rating for display
+                            let displayRating = 'Not Rated';
+                            if (formData.rating) {
+                                if (formData.rating === 'Standing Ovation' || formData.rating === 6) {
+                                    displayRating = 'Standing Ovation';
+                                } else {
+                                    const ratingValue = typeof formData.rating === 'string' ? 
+                                        parseFloat(formData.rating) : formData.rating;
+                                    
+                                    if (!isNaN(ratingValue)) {
+                                        displayRating = `${ratingValue} ${ratingValue === 1 ? 'Moon' : 'Moons'}`;
+                                    }
+                                }
+                            }
+                            
+                            showToast({
+                                title: 'Play Added Successfully',
+                                message: `Play successfully added`,
+                                type: 'success',
+                                duration: 5000,
+                                details: {
+                                    'Play': formData.name,
+                                    'Date': formattedDate,
+                                    'Theatre': formData.theatre || 'Not specified',
+                                    'Rating': displayRating,
+                                    'Image': formData.image ? 'Yes' : 'No'
+                                }
+                            });
+                        } catch (error) {
+                            console.error('Error showing toast:', error);
+                        }
+                    }, 500); // Short delay to let the form processing complete
+                }
             });
         });
     </script>
