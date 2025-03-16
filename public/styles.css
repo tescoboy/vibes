@@ -39,15 +39,66 @@ body {
 }
 
 .site-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.5rem;
-    font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.logo-icon {
+    font-size: 1.5rem;
+    margin-right: 8px;
+    color: #e74c3c;
+    animation: pulse-subtle 3s infinite ease-in-out;
+}
+
+.logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
+    background-clip: text;
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: transparent;
+    position: relative;
+}
+
+.logo-text::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #e74c3c, transparent);
+}
+
+/* Fix the logo icon animation by making it more specific and adding !important */
+.nav-content .logo-container .logo-icon,
+.site-title .logo-container .logo-icon,
+.fa-masks-theater.logo-icon,
+i.fa-solid.fa-masks-theater.logo-icon {
+    animation: pulse-subtle 3s infinite ease-in-out !important;
+    -webkit-animation: pulse-subtle 3s infinite ease-in-out !important;
+    transform-origin: center center;
+    display: inline-block;
+}
+
+/* Add prefixed keyframes for better browser support */
+@keyframes pulse-subtle {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@-webkit-keyframes pulse-subtle {
+    0% { -webkit-transform: scale(1); transform: scale(1); }
+    50% { -webkit-transform: scale(1.05); transform: scale(1.05); }
+    100% { -webkit-transform: scale(1); transform: scale(1); }
 }
 
 .nav-links {
@@ -316,6 +367,14 @@ body {
 
     .form-actions button {
         width: 100%;
+    }
+
+    .logo-text {
+        font-size: 1.1rem;
+    }
+    
+    .logo-icon {
+        font-size: 1.3rem;
     }
 }
 
@@ -671,4 +730,498 @@ body {
     margin: 6px 0 !important;
     font-size: 0.95rem !important;
   }
+}
+
+/* Table View Styles */
+.view-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.view-mode-toggle {
+  display: flex;
+  gap: 10px;
+}
+
+.view-mode-btn {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+
+.view-mode-btn.active {
+  background: #e74c3c;
+  color: white;
+  border-color: #c0392b;
+}
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.search-container {
+  position: relative;
+}
+
+#playSearchInput {
+  padding: 8px 12px 8px 35px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 250px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+}
+
+.entries-per-page {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#entriesPerPage {
+  padding: 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Table Styling */
+.plays-table-container {
+  width: 100%;
+  overflow-x: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-radius: 4px;
+  margin-bottom: 30px;
+}
+
+.plays-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.plays-table thead {
+  background-color: #f8f9fa;
+}
+
+.plays-table th {
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #e0e0e0;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+}
+
+.plays-table th i {
+  margin-left: 5px;
+  font-size: 12px;
+}
+
+.plays-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+}
+
+.plays-table tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+.plays-table td {
+  padding: 12px 15px;
+}
+
+.table-rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.table-edit-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  transition: background-color 0.2s;
+}
+
+.table-edit-btn:hover {
+  background-color: #c0392b;
+}
+
+/* Pagination Styles */
+.table-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+}
+
+.pagination-info {
+  color: #666;
+  font-size: 14px;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination-numbers {
+  display: flex;
+  gap: 5px;
+}
+
+.page-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-number.active {
+  background: #e74c3c;
+  color: white;
+  border-color: #c0392b;
+}
+
+#prevPageBtn, #nextPageBtn {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#prevPageBtn:disabled, #nextPageBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .view-controls {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+  
+  .table-controls {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .search-container {
+    width: 100%;
+  }
+  
+  #playSearchInput {
+    width: 100%;
+  }
+  
+  .table-pagination {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+}
+
+/* Table Header Styling */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  background-color: #f9f9f9;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 20px;
+}
+
+.table-header h2 {
+  font-family: 'Playfair Display', serif;
+  margin: 0;
+  color: #e74c3c;
+  font-size: 28px;
+}
+
+.table-header .search-container {
+  position: relative;
+  width: 300px;
+}
+
+.table-header input[type="text"] {
+  width: 100%;
+  padding: 10px 15px 10px 40px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.table-header input[type="text"]:focus {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
+  outline: none;
+}
+
+.table-header .search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+}
+
+/* Enhanced Table Styling */
+.plays-table-container {
+  margin: 0 25px 30px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  background: white;
+}
+
+.plays-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.plays-table thead {
+  background-color: #f5f5f5;
+}
+
+.plays-table th {
+  padding: 15px 20px;
+  text-align: left;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 2px solid #ddd;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.plays-table th:hover {
+  background-color: #ececec;
+}
+
+.plays-table th i {
+  margin-left: 5px;
+  font-size: 12px;
+  color: #999;
+}
+
+.plays-table th i.fa-sort-up,
+.plays-table th i.fa-sort-down {
+  color: #e74c3c;
+}
+
+.plays-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+}
+
+.plays-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.plays-table tbody tr:hover {
+  background-color: #f0f0f0;
+}
+
+.plays-table td {
+  padding: 12px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  vertical-align: middle;
+}
+
+/* Right border for all cells except last column */
+.plays-table th:not(:last-child),
+.plays-table td:not(:last-child) {
+  border-right: 1px solid #e0e0e0;
+}
+
+/* Table rating styling */
+.table-rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.table-rating i.fa-moon {
+  color: #f1c40f;
+  font-size: 14px;
+}
+
+/* Edit button styling */
+.table-edit-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table-edit-btn:hover {
+  background-color: #c0392b;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+.table-edit-btn i {
+  font-size: 13px;
+}
+
+/* Enhanced pagination styling */
+.table-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: #f5f5f5;
+  border-top: 1px solid #ddd;
+}
+
+.pagination-info {
+  color: #666;
+  font-size: 14px;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pagination-numbers {
+  display: flex;
+  gap: 6px;
+}
+
+.page-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  background: white;
+  color: #555;
+}
+
+.page-number:hover {
+  background: #f0f0f0;
+  border-color: #ccc;
+}
+
+.page-number.active {
+  background: #e74c3c;
+  color: white;
+  border-color: #c0392b;
+}
+
+.page-ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+#prevPageBtn, #nextPageBtn {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  color: #555;
+}
+
+#prevPageBtn:hover, #nextPageBtn:hover {
+  background: #f0f0f0;
+  border-color: #ccc;
+}
+
+#prevPageBtn:disabled, #nextPageBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+/* Show the table by default instead of hidden */
+.plays-table-container {
+  display: block !important;
+}
+
+/* Force table display with high specificity */
+body.table-view-active .plays-table-container,
+html body .plays-table-container,
+.main-content .plays-table-container {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+body.table-view-active .play-grid,
+html body .play-grid.hidden,
+.main-content .play-grid.hidden {
+  display: none !important;
+}
+
+/* Add this to ensure the table is visible in the main content area */
+.main-content {
+  padding-top: 80px; /* Adjust based on your navigation height */
+  min-height: 80vh;
 }

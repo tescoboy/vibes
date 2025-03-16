@@ -3,14 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Theatre Plays</title>
+    <title>Serious Theatre | Your Theatre Collection</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎭</text></svg>">
 </head>
 <body>
+    <style>
+        /* Direct table styling with maximum specificity */
+        .plays-table-container {
+            display: block !important;
+            margin: 20px !important;
+            border: 1px solid #ddd !important;
+            border-radius: 8px !important;
+            overflow: hidden !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+            background: white !important;
+        }
+        
+        .plays-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            border-spacing: 0 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+        }
+        
+        .plays-table thead {
+            background-color: #f5f5f5 !important;
+        }
+        
+        .plays-table th {
+            padding: 15px 20px !important;
+            text-align: left !important;
+            font-weight: 600 !important;
+            color: #555 !important;
+            border-bottom: 2px solid #ddd !important;
+            border-right: 1px solid #ddd !important;
+        }
+        
+        .plays-table th:last-child {
+            border-right: none !important;
+        }
+        
+        .plays-table tbody tr {
+            border-bottom: 1px solid #e0e0e0 !important;
+        }
+        
+        .plays-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9 !important;
+        }
+        
+        .plays-table tbody tr:hover {
+            background-color: #f0f0f0 !important;
+        }
+        
+        .plays-table td {
+            padding: 12px 20px !important;
+            border-bottom: 1px solid #e0e0e0 !important;
+            border-right: 1px solid #e0e0e0 !important;
+        }
+        
+        .plays-table td:last-child {
+            border-right: none !important;
+        }
+        
+        .table-edit-btn {
+            background-color: #e74c3c !important;
+            color: white !important;
+            border: none !important;
+            padding: 8px 15px !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+        }
+        
+        .table-edit-btn:hover {
+            background-color: #c0392b !important;
+        }
+        
+        .table-header {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            padding: 20px !important;
+            background-color: #f9f9f9 !important;
+            border-bottom: 1px solid #e0e0e0 !important;
+        }
+        
+        .table-header h2 {
+            margin: 0 !important;
+            color: #e74c3c !important;
+            font-size: 24px !important;
+        }
+        
+        /* Make sure table container is positioned correctly */
+        .main-content {
+            padding-top: 60px !important;
+        }
+        
+        /* Force display */
+        .plays-table-container {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+        
+        .play-grid {
+            display: none !important;
+        }
+
+        /* Enhanced Pagination Styling */
+        .table-pagination {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            padding: 15px 20px !important;
+            background: #f8f9fa !important;
+            border-top: 1px solid #ddd !important;
+            margin-top: 0 !important;
+        }
+
+        .pagination-info {
+            color: #666 !important;
+            font-size: 14px !important;
+            font-weight: normal !important;
+        }
+
+        .pagination-controls {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+        }
+
+        .pagination-numbers {
+            display: flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+        }
+
+        .page-number {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-width: 32px !important;
+            height: 32px !important;
+            border: 1px solid #ddd !important;
+            border-radius: 4px !important;
+            background-color: white !important;
+            color: #333 !important;
+            font-size: 14px !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            padding: 0 !important;
+            margin: 0 2px !important;
+            font-weight: normal !important;
+            text-align: center !important;
+            line-height: 32px !important;
+        }
+
+        .page-number:hover {
+            background-color: #f0f0f0 !important;
+            border-color: #ccc !important;
+        }
+
+        .page-number.active {
+            background-color: #e74c3c !important;
+            color: white !important;
+            border-color: #c0392b !important;
+            font-weight: bold !important;
+        }
+
+        #prevPageBtn, #nextPageBtn {
+            background-color: white !important;
+            color: #333 !important;
+            border: 1px solid #ddd !important;
+            border-radius: 4px !important;
+            padding: 8px 12px !important;
+            font-size: 14px !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            min-width: 100px !important;
+            text-align: center !important;
+            display: inline-block !important;
+            font-weight: normal !important;
+        }
+
+        #prevPageBtn:hover, #nextPageBtn:hover {
+            background-color: #f0f0f0 !important;
+            border-color: #ccc !important;
+        }
+
+        #prevPageBtn:disabled, #nextPageBtn:disabled {
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+            background-color: #f5f5f5 !important;
+        }
+
+        /* Mobile responsiveness - simpler horizontal scrolling approach */
+        @media screen and (max-width: 768px) {
+            /* Table header adjustments */
+            .table-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 15px !important;
+                padding: 15px !important;
+            }
+            
+            .table-header h2 {
+                font-size: 20px !important;
+            }
+            
+            .search-container {
+                width: 100% !important;
+            }
+            
+            /* Make table horizontally scrollable instead of transforming it */
+            .plays-table-container {
+                margin: 10px !important;
+                padding: 0 !important;
+                border-radius: 6px !important;
+                overflow-x: auto !important; /* Horizontal scrolling */
+                -webkit-overflow-scrolling: touch !important; /* Smooth scrolling on iOS */
+            }
+            
+            /* Keep table structure but adjust sizing */
+            .plays-table {
+                width: 100% !important;
+                min-width: 650px !important; /* Ensure minimum width for content */
+            }
+            
+            .plays-table th,
+            .plays-table td {
+                padding: 10px 15px !important;
+                white-space: nowrap !important; /* Prevent text wrapping */
+            }
+            
+            /* Tighter cell spacing for mobile */
+            .plays-table th:not(:last-child),
+            .plays-table td:not(:last-child) {
+                padding-right: 15px !important;
+            }
+            
+            /* Adjust edit button for mobile */
+            .table-edit-btn {
+                padding: 8px 10px !important;
+                font-size: 12px !important;
+            }
+            
+            /* Pagination adjustments */
+            .table-pagination {
+                flex-direction: column !important;
+                gap: 15px !important;
+                padding: 10px !important;
+            }
+            
+            .pagination-info {
+                width: 100% !important;
+                text-align: center !important;
+                font-size: 12px !important;
+            }
+            
+            .pagination-controls {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+            
+            /* Show fewer page numbers on mobile */
+            .page-number:not(.active) {
+                display: none !important;
+            }
+            
+            .page-number.active {
+                display: flex !important;
+            }
+            
+            /* Always show prev/next buttons */
+            #prevPageBtn, #nextPageBtn {
+                min-width: 80px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+            
+            /* Fix main content padding */
+            .main-content {
+                padding-top: 70px !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+        }
+    </style>
     <nav>
         <div class="nav-content">
-            <div class="site-title">Theatre Plays</div>
+            <div class="site-title">
+                <div class="logo-container">
+                    <i class="fa-solid fa-masks-theater logo-icon"></i>
+                    <span class="logo-text">SeriousTheatre</span>
+                </div>
+            </div>
             <button class="burger-menu" onclick="toggleMobileMenu()">
                 <span></span>
                 <span></span>
@@ -18,7 +308,7 @@
             </button>
             <div class="nav-links">
                 <a class="nav-link" id="dashboardLink" onclick="displayPlays('dashboard')">Dashboard</a>
-                <a class="nav-link active" id="allPlaysLink" onclick="displayPlays('all')">All Plays</a>
+                <a class="nav-link" id="allPlaysLink" onclick="displayPlays('all'); switchViewMode('table')">All Plays</a>
                 <a class="nav-link" id="upcomingPlaysLink" onclick="displayPlays('upcoming')">Upcoming Plays</a>
                 <a class="nav-link" id="seenPlaysLink" onclick="displayPlays('seen')">Seen Plays</a>
                 <a class="nav-link" id="hallOfFamePlaysLink" onclick="displayPlays('hallOfFame')">Hall of Fame</a>
@@ -33,6 +323,14 @@
         </div>
     </nav>
 
+    <div class="table-header">
+        <h2>All Plays</h2>
+        <div class="search-container">
+            <input type="text" id="playSearchInput" placeholder="Search plays..." onkeyup="filterPlays()">
+            <i class="fa-solid fa-search search-icon"></i>
+        </div>
+    </div>
+
     <div class="main-content">
         <button class="calendar-toggle" onclick="toggleCalendarView()" style="display: none;">
             Toggle Calendar View
@@ -41,6 +339,33 @@
             Toggle Hall of Shame
         </button>
         <div class="calendar-container"></div>
+        <div class="plays-table-container" style="display: none;">
+            <table class="plays-table">
+                <thead>
+                    <tr>
+                        <th onclick="sortTable(0)">Play Name <i class="fa-solid fa-sort"></i></th>
+                        <th onclick="sortTable(1)">Date <i class="fa-solid fa-sort"></i></th>
+                        <th onclick="sortTable(2)">Theatre <i class="fa-solid fa-sort"></i></th>
+                        <th onclick="sortTable(3)">Rating <i class="fa-solid fa-sort"></i></th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="plays-table-body">
+                    <!-- Table rows will be added dynamically here -->
+                </tbody>
+            </table>
+            
+            <div class="table-pagination">
+                <div class="pagination-info">Showing <span id="startEntry">1</span> to <span id="endEntry">10</span> of <span id="totalEntries">0</span> entries</div>
+                <div class="pagination-controls">
+                    <button id="prevPageBtn" onclick="previousPage()" disabled>&laquo; Previous</button>
+                    <div id="paginationNumbers" class="pagination-numbers">
+                        <!-- Page numbers will be added dynamically -->
+                    </div>
+                    <button id="nextPageBtn" onclick="nextPage()">Next &raquo;</button>
+                </div>
+            </div>
+        </div>
         <div class="play-grid"></div>
         <div class="add-play-form" style="display: none;">
             <h2>Add New Play</h2>
@@ -284,6 +609,513 @@
         setTimeout(applyMobileStyles, 500);
         setTimeout(applyMobileStyles, 1000);
         setTimeout(applyMobileStyles, 2000);
+
+        // Replace the existing fixLogoAnimation function with this version
+        function fixLogoAnimation() {
+            const logoIcon = document.querySelector('.fa-masks-theater.logo-icon');
+            if (logoIcon) {
+                console.log('Found logo icon, applying direct animation and styling');
+                
+                // Apply color style
+                logoIcon.style.color = '#e74c3c';
+                logoIcon.style.display = 'inline-block';
+                logoIcon.style.transition = 'transform 1.5s ease-in-out';
+                
+                // Custom JS animation instead of relying on CSS animations
+                let growing = true;
+                const animateLogo = () => {
+                    if (growing) {
+                        logoIcon.style.transform = 'scale(1.05)';
+                    } else {
+                        logoIcon.style.transform = 'scale(1)';
+                    }
+                    growing = !growing;
+                    
+                    // Continue animation loop
+                    setTimeout(animateLogo, 1500);
+                };
+                
+                // Start the animation
+                animateLogo();
+            } else {
+                console.log('Logo icon not found in the DOM');
+            }
+        }
+        
+        // Run the fix immediately 
+        fixLogoAnimation();
+        
+        // Also run after delays to ensure it works
+        setTimeout(fixLogoAnimation, 500);
+        setTimeout(fixLogoAnimation, 1000);
+        
+        // Run again if the window is resized
+        window.addEventListener('resize', fixLogoAnimation);
+        
+        // Run when DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', fixLogoAnimation);
+
+        // Make sure switchViewMode is defined globally
+        function switchViewMode(mode) {
+            console.log("Switching to view mode:", mode);
+            
+            // Update buttons
+            document.querySelectorAll('.view-mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const activeButton = document.querySelector(`.view-mode-btn[data-mode="${mode}"]`);
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+            
+            // Show/hide relevant containers
+            const tableContainer = document.querySelector('.plays-table-container');
+            const gridContainer = document.querySelector('.play-grid');
+            
+            if (mode === 'table') {
+                if (tableContainer) tableContainer.style.display = 'block';
+                if (gridContainer) gridContainer.style.display = 'none';
+                
+                // Fetch plays for the table if needed
+                if (typeof fetchPlays === 'function') {
+                    fetchPlays().then(plays => {
+                        // Make plays available to table functions
+                        window.currentPlays = plays;
+                        window.filteredPlays = [...plays];
+                        
+                        // Render the table if the function exists
+                        if (typeof renderTableView === 'function') {
+                            renderTableView();
+                        }
+                    }).catch(err => {
+                        console.error("Error fetching plays:", err);
+                    });
+                }
+            } else {
+                if (tableContainer) tableContainer.style.display = 'none';
+                if (gridContainer) gridContainer.style.display = 'grid';
+            }
+        }
+        
+        // Make sure all table-related functions are globally available
+        window.filterPlays = function() {
+            const searchTerm = document.getElementById('playSearchInput').value.toLowerCase();
+            
+            if (!window.currentPlays) return;
+            
+            if (searchTerm === '') {
+                window.filteredPlays = [...window.currentPlays];
+            } else {
+                window.filteredPlays = window.currentPlays.filter(play => {
+                    return (
+                        play.name.toLowerCase().includes(searchTerm) || 
+                        (play.theatre && play.theatre.toLowerCase().includes(searchTerm))
+                    );
+                });
+            }
+            
+            // Reset to first page when filtering
+            window.currentPage = 1;
+            
+            // Re-render the table
+            if (typeof renderTableView === 'function') {
+                renderTableView();
+            }
+        };
+        
+        // Properly load display-functions.js and ensure order
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Initializing view mode controls");
+            
+            // Set initial default view
+            const viewBtns = document.querySelectorAll('.view-mode-btn');
+            if (viewBtns.length > 0) {
+                const defaultMode = 'table';
+                console.log("Setting default view mode:", defaultMode);
+                switchViewMode(defaultMode);
+            }
+        });
+
+        // Direct table initialization function
+        function initializeTableView() {
+            console.log("Initializing table view only");
+            
+            // Hide grid view and show table view
+            const tableContainer = document.querySelector('.plays-table-container');
+            const gridContainer = document.querySelector('.play-grid');
+            
+            if (tableContainer) {
+                tableContainer.style.display = 'block';
+                console.log("Table container displayed");
+            } else {
+                console.error("Table container not found");
+            }
+            
+            if (gridContainer) {
+                gridContainer.style.display = 'none';
+                console.log("Grid container hidden");
+            }
+            
+            // Fetch plays for the table
+            if (typeof fetchPlays === 'function') {
+                console.log("Fetching plays for table");
+                fetchPlays().then(plays => {
+                    console.log("Fetched plays:", plays ? plays.length : 0);
+                    
+                    // Make plays available for table functions
+                    window.currentPlays = plays || [];
+                    window.filteredPlays = [...window.currentPlays];
+                    window.currentPage = 1;
+                    window.pageSize = 10;
+                    window.sortColumn = 1;
+                    window.sortDirection = 'desc';
+                    
+                    // Define render function if needed
+                    if (typeof renderTableView !== 'function') {
+                        console.log("Defining missing renderTableView function");
+                        window.renderTableView = function() {
+                            const tableBody = document.getElementById('plays-table-body');
+                            if (!tableBody) {
+                                console.error("Table body element not found");
+                                return;
+                            }
+                            
+                            tableBody.innerHTML = '';
+                            console.log("Rendering table with", window.filteredPlays.length, "plays");
+                            
+                            // Implement basic rendering logic
+                            const startIndex = (window.currentPage - 1) * window.pageSize;
+                            const endIndex = Math.min(startIndex + window.pageSize, window.filteredPlays.length);
+                            
+                            for (let i = startIndex; i < endIndex; i++) {
+                                const play = window.filteredPlays[i];
+                                const row = document.createElement('tr');
+                                
+                                row.innerHTML = `
+                                    <td>${play.name || 'Unnamed Play'}</td>
+                                    <td>${new Date(play.date).toLocaleDateString() || 'No Date'}</td>
+                                    <td>${play.theatre || 'N/A'}</td>
+                                    <td>${play.rating || 'Not Rated'}</td>
+                                    <td>
+                                        <button onclick="editPlay('${play.id}')" class="table-edit-btn">
+                                            <i class="fa-solid fa-edit"></i> Edit
+                                        </button>
+                                    </td>
+                                `;
+                                
+                                tableBody.appendChild(row);
+                            }
+                            
+                            // Update pagination info
+                            document.getElementById('startEntry').textContent = window.filteredPlays.length ? startIndex + 1 : 0;
+                            document.getElementById('endEntry').textContent = endIndex;
+                            document.getElementById('totalEntries').textContent = window.filteredPlays.length;
+                        }
+                    }
+                    
+                    // Render the table
+                    if (typeof renderTableView === 'function') {
+                        renderTableView();
+                        console.log("Table rendered");
+                    } else {
+                        console.error("renderTableView function not available");
+                    }
+                }).catch(err => {
+                    console.error("Error fetching plays:", err);
+                });
+            } else {
+                console.error("fetchPlays function not found");
+            }
+
+            // Add this to your initializeTableView function
+            document.body.classList.add('table-view-active');
+        }
+
+        // Run initialization when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM loaded, initializing table view");
+            setTimeout(initializeTableView, 500); // Small delay to ensure other scripts have loaded
+        });
+
+        // Also run it immediately in case DOMContentLoaded already fired
+        initializeTableView();
+
+        // Add missing table functions
+        window.sortTable = function(columnIndex) {
+            console.log("Sorting table by column:", columnIndex);
+            
+            // If we're re-sorting the same column, toggle direction
+            if (window.sortColumn === columnIndex) {
+                window.sortDirection = window.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                // New column, default to ascending
+                window.sortColumn = columnIndex;
+                window.sortDirection = 'asc';
+            }
+            
+            // Update sort indicators in the UI
+            const headerIcons = document.querySelectorAll('.plays-table th i');
+            headerIcons.forEach(icon => icon.className = 'fa-solid fa-sort');
+            
+            if (headerIcons[columnIndex]) {
+                headerIcons[columnIndex].className = 'fa-solid fa-sort-' + 
+                    (window.sortDirection === 'asc' ? 'up' : 'down');
+            }
+            
+            // Sort the filtered plays array
+            window.filteredPlays.sort((a, b) => {
+                let valueA, valueB;
+                
+                // Extract values based on column
+                switch(columnIndex) {
+                    case 0: // Play Name
+                        valueA = a.name ? a.name.toLowerCase() : '';
+                        valueB = b.name ? b.name.toLowerCase() : '';
+                        break;
+                    case 1: // Date
+                        valueA = new Date(a.date || 0);
+                        valueB = new Date(b.date || 0);
+                        break;
+                    case 2: // Theatre
+                        valueA = (a.theatre || '').toLowerCase();
+                        valueB = (b.theatre || '').toLowerCase();
+                        break;
+                    case 3: // Rating
+                        valueA = parseFloat(a.rating) || 0;
+                        valueB = parseFloat(b.rating) || 0;
+                        if (a.rating === 'Standing Ovation') valueA = 6;
+                        if (b.rating === 'Standing Ovation') valueB = 6;
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                // Compare and return based on sort direction
+                if (valueA < valueB) {
+                    return window.sortDirection === 'asc' ? -1 : 1;
+                }
+                if (valueA > valueB) {
+                    return window.sortDirection === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+            
+            // Re-render the table with the sorted data
+            if (typeof window.renderTableView === 'function') {
+                window.renderTableView();
+            } else {
+                console.error("renderTableView not available for sorting");
+            }
+        };
+
+        // Pagination functions
+        window.previousPage = function() {
+            console.log("Moving to previous page");
+            if (window.currentPage > 1) {
+                window.currentPage--;
+                window.renderTableView();
+            }
+        };
+
+        window.nextPage = function() {
+            console.log("Moving to next page");
+            const maxPage = Math.ceil(window.filteredPlays.length / window.pageSize);
+            if (window.currentPage < maxPage) {
+                window.currentPage++;
+                window.renderTableView();
+            }
+        };
+
+        window.goToPage = function(page) {
+            console.log("Going to page:", page);
+            window.currentPage = page;
+            window.renderTableView();
+        };
+
+        // Render pagination numbers
+        window.renderPaginationNumbers = function() {
+            const container = document.getElementById('paginationNumbers');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            const maxPage = Math.ceil(window.filteredPlays.length / window.pageSize);
+            const maxButtons = 5;
+            
+            // Calculate which page numbers to show
+            let startPage = Math.max(1, window.currentPage - Math.floor(maxButtons / 2));
+            let endPage = Math.min(maxPage, startPage + maxButtons - 1);
+            
+            // Adjust if we're near the end
+            if (endPage - startPage + 1 < maxButtons) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
+            }
+            
+            // Add page number buttons
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('div');
+                pageButton.className = 'page-number' + (i === window.currentPage ? ' active' : '');
+                pageButton.textContent = i;
+                pageButton.onclick = function() { window.goToPage(i); };
+                container.appendChild(pageButton);
+            }
+        };
+
+        // Enhance the renderTableView function to handle pagination properly
+        const originalRenderTableView = window.renderTableView;
+        window.renderTableView = function() {
+            // Call the original function if it exists
+            if (typeof originalRenderTableView === 'function') {
+                originalRenderTableView();
+            } else {
+                // Basic implementation
+                const tableBody = document.getElementById('plays-table-body');
+                if (!tableBody) return;
+                
+                tableBody.innerHTML = '';
+                
+                // Calculate pagination
+                const startIndex = (window.currentPage - 1) * window.pageSize;
+                const endIndex = Math.min(startIndex + window.pageSize, window.filteredPlays.length);
+                
+                // Render rows
+                for (let i = startIndex; i < endIndex; i++) {
+                    const play = window.filteredPlays[i];
+                    const row = document.createElement('tr');
+                    
+                    // Format rating display
+                    let ratingDisplay = 'Not Rated';
+                    if (play.rating) {
+                        if (play.rating === 'Standing Ovation') {
+                            ratingDisplay = '<i class="fa-solid fa-person"></i> Standing Ovation';
+                        } else {
+                            const rating = parseFloat(play.rating);
+                            ratingDisplay = '<div class="table-rating">';
+                            for (let i = 0; i < Math.floor(rating); i++) {
+                                ratingDisplay += '<i class="fa-solid fa-moon"></i>';
+                            }
+                            if (rating % 1 !== 0) {
+                                ratingDisplay += '<i class="fa-regular fa-moon"></i>';
+                            }
+                            ratingDisplay += '</div>';
+                        }
+                    }
+                    
+                    row.innerHTML = `
+                        <td>${play.name || 'Unnamed Play'}</td>
+                        <td>${new Date(play.date).toLocaleDateString() || 'No Date'}</td>
+                        <td>${play.theatre || 'N/A'}</td>
+                        <td>${ratingDisplay}</td>
+                        <td>
+                            <button onclick="editPlay('${play.id}')" class="table-edit-btn">
+                                <i class="fa-solid fa-edit"></i> Edit
+                            </button>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                }
+                
+                // Update pagination info
+                document.getElementById('startEntry').textContent = window.filteredPlays.length > 0 ? startIndex + 1 : 0;
+                document.getElementById('endEntry').textContent = endIndex;
+                document.getElementById('totalEntries').textContent = window.filteredPlays.length;
+            }
+            
+            // Always render pagination numbers
+            window.renderPaginationNumbers();
+            
+            // Update pagination button state
+            document.getElementById('prevPageBtn').disabled = window.currentPage <= 1;
+            document.getElementById('nextPageBtn').disabled = 
+                window.currentPage >= Math.ceil(window.filteredPlays.length / window.pageSize);
+        };
+
+        // Fix plays-table-container visibility
+        (function() {
+            // Get the table container
+            const tableContainer = document.querySelector('.plays-table-container');
+            if (tableContainer) {
+                // Remove any inline display style and add important inline style
+                tableContainer.removeAttribute('style');
+                tableContainer.setAttribute('style', 'display: block !important');
+                console.log('Table visibility fixed by directly setting display:block important');
+            }
+            
+            // Hide the grid
+            const gridContainer = document.querySelector('.play-grid');
+            if (gridContainer) {
+                gridContainer.style.display = 'none';
+            }
+        })();
+        
+        // Do this again after a short delay to handle any potential race conditions
+        setTimeout(function() {
+            const tableContainer = document.querySelector('.plays-table-container');
+            if (tableContainer) {
+                tableContainer.removeAttribute('style');
+                tableContainer.setAttribute('style', 'display: block !important');
+            }
+        }, 500);
+
+        // This script will run after the page is loaded and remove play cards from the DOM when table view is active
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Checking for play cards to remove");
+            
+            // Function to completely remove play cards
+            function removePlayCards() {
+                // First make sure table is visible
+                const tableContainer = document.querySelector('.plays-table-container');
+                if (tableContainer) {
+                    tableContainer.style.display = 'block';
+                    
+                    // Then find and remove all play cards
+                    const playGrid = document.querySelector('.play-grid');
+                    if (playGrid) {
+                        // First set it to display none
+                        playGrid.style.display = 'none';
+                        
+                        // Then clear its contents
+                        playGrid.innerHTML = '';
+                        console.log("Cleared play cards");
+                    }
+                }
+            }
+            
+            // Run immediately and again after a delay
+            removePlayCards();
+            setTimeout(removePlayCards, 1000);
+            
+            // Override the displayPlays function to prevent cards from being created
+            const originalDisplayPlays = window.displayPlays;
+            if (typeof originalDisplayPlays === 'function') {
+                window.displayPlays = function(section) {
+                    // Call original function
+                    originalDisplayPlays(section);
+                    
+                    // If we're in 'all' section, remove play cards
+                    if (section === 'all') {
+                        removePlayCards();
+                        
+                        // Schedule another cleanup after any possible async operations
+                        setTimeout(removePlayCards, 500);
+                    }
+                };
+                console.log("Modified displayPlays function to prevent card rendering");
+            }
+        });
+        
+        // Force cleanup immediately for current page state
+        (function() {
+            const playGrid = document.querySelector('.play-grid');
+            if (playGrid) {
+                // Completely remove the grid from the DOM to ensure it's gone
+                if (playGrid.parentNode) {
+                    playGrid.parentNode.removeChild(playGrid);
+                    console.log("Completely removed play grid from DOM");
+                }
+            }
+        })();
     </script>
 </body>
 </html> 
