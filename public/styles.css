@@ -622,3 +622,53 @@ body {
 .moon-half i {
     color: #FFD700; /* Gold color for half moons in display */
 }
+
+/* Enhanced mobile styles with !important to override other styles */
+@media screen and (max-width: 767px) {
+  /* Force card grid to stack */
+  .play-grid {
+    display: block !important;
+    grid-template-columns: unset !important;
+    padding: 10px !important;
+  }
+  
+  /* Force full width cards */
+  .play-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 0 20px 0 !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Make card content full width */
+  .play-card-content {
+    width: 100% !important;
+    padding: 12px !important;
+  }
+  
+  /* Make image container full width */
+  .image-container {
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+  
+  /* Make images full width */
+  .image-container img {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: cover !important;
+    max-height: none !important;
+  }
+  
+  /* Improve text readability */
+  .play-card h3 {
+    font-size: 1.3rem !important;
+    margin: 10px 0 !important;
+  }
+  
+  .play-card p {
+    margin: 6px 0 !important;
+    font-size: 0.95rem !important;
+  }
+}

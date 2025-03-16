@@ -211,6 +211,79 @@
                 }
             });
         });
+
+        // Function to apply mobile styles directly
+        function applyMobileStyles() {
+            // Only apply on mobile devices
+            if (window.innerWidth <= 767) {
+                console.log("Applying mobile-specific styles");
+                
+                // Create a style element
+                const styleEl = document.createElement('style');
+                styleEl.id = 'mobile-card-fix';
+                
+                // Add highly specific CSS rules
+                styleEl.textContent = `
+                    /* Target card grid directly */
+                    body .play-grid, 
+                    body .main-content .play-grid {
+                        display: block !important;
+                        grid-template-columns: none !important;
+                        padding: 10px !important;
+                    }
+                    
+                    /* Target cards */
+                    body .play-grid .play-card,
+                    body .main-content .play-grid .play-card {
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        margin: 0 0 20px 0 !important;
+                        box-sizing: border-box !important;
+                    }
+                    
+                    /* Target card content */
+                    body .play-card .play-card-content,
+                    body .play-grid .play-card .play-card-content {
+                        width: 100% !important;
+                        box-sizing: border-box !important;
+                    }
+                    
+                    /* Target image container */
+                    body .play-card .image-container,
+                    body .play-card-content .image-container {
+                        width: 100% !important;
+                        height: auto !important;
+                        max-height: none !important;
+                    }
+                    
+                    /* Target images */
+                    body .play-card .image-container img,
+                    body .play-card-content .image-container img {
+                        width: 100% !important;
+                        height: auto !important;
+                        max-height: none !important;
+                    }
+                `;
+                
+                // Remove any existing instance
+                const existingStyle = document.getElementById('mobile-card-fix');
+                if (existingStyle) {
+                    existingStyle.remove();
+                }
+                
+                // Add to head
+                document.head.appendChild(styleEl);
+            }
+        }
+        
+        // Apply styles immediately and when window resizes
+        applyMobileStyles();
+        window.addEventListener('resize', applyMobileStyles);
+        
+        // Also apply after a slight delay to make sure it overrides everything
+        setTimeout(applyMobileStyles, 500);
+        setTimeout(applyMobileStyles, 1000);
+        setTimeout(applyMobileStyles, 2000);
     </script>
 </body>
 </html> 
