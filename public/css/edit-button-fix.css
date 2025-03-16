@@ -1,0 +1,22 @@
+/* Force edit button to be initially hidden */
+.play-card .edit-button {
+  opacity: 0 !important;
+  visibility: visible !important;
+  transition: opacity 0.2s ease !important;
+}
+
+/* Show edit button only on hover */
+.play-card:hover .edit-button {
+  opacity: 1 !important;
+}
+
+/* On touch devices, show with moderate opacity */
+@media (hover: none) {
+  .play-card .edit-button {
+    opacity: 0.7 !important;
+  }
+  
+  .play-card:active .edit-button {
+    opacity: 1 !important;
+  }
+} 

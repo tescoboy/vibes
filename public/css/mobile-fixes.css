@@ -1,0 +1,81 @@
+/* Mobile-specific fixes with high specificity */
+@media screen and (max-width: 576px) {
+  .play-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important; /* Force single column */
+    width: 100% !important;
+    gap: 15px !important;
+    padding: 0 10px !important;
+  }
+  
+  .play-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .play-card-image {
+    height: 200px !important; /* Taller images for mobile */
+  }
+  
+  .play-card-content {
+    padding: 16px !important;
+  }
+  
+  .add-play-form {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 15px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+    max-height: calc(100vh - 60px) !important; /* Account for header */
+  }
+  
+  .add-play-form h2 {
+    font-size: 1.5rem !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .form-group {
+    margin-bottom: 12px !important;
+  }
+  
+  /* Fix rating selection on small screens */
+  .moon-rating-wrapper {
+    justify-content: center !important;
+  }
+  
+  .moon-item {
+    margin-right: 10px !important;
+  }
+  
+  /* Make form inputs more touch-friendly */
+  .add-play-form input,
+  .add-play-form select,
+  .add-play-form button {
+    padding: 12px !important;
+    font-size: 16px !important; /* Prevent zoom on iOS */
+    height: auto !important;
+  }
+  
+  /* Ensure form buttons are easier to tap */
+  .form-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  .form-actions button {
+    width: 100% !important;
+    min-height: 44px !important; /* Touch-friendly size */
+    margin: 0 !important;
+  }
+}
+
+/* Target even smaller screens */
+@media screen and (max-width: 375px) {
+  .main-content {
+    padding: 0 5px !important;
+  }
+} 
