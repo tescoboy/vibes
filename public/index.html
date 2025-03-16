@@ -211,6 +211,111 @@
                 }
             });
         });
+
+        // Mobile Card Optimizer Script
+        function optimizeMobileCards() {
+            console.log("Optimizing mobile cards for portrait view");
+            
+            // Check if we're on mobile in portrait orientation
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile) {
+                // Get all the elements we need to modify
+                const mainContent = document.querySelector('.main-content');
+                const playGrid = document.querySelector('.play-grid');
+                const playCards = document.querySelectorAll('.play-card');
+                
+                // Style the main content container
+                if (mainContent) {
+                    mainContent.style.padding = '0';
+                    mainContent.style.width = '100%';
+                    mainContent.style.maxWidth = '100%';
+                    mainContent.style.margin = '0';
+                    mainContent.style.paddingTop = '64px';
+                }
+                
+                // Style the play grid
+                if (playGrid) {
+                    playGrid.style.display = 'block'; // Change from grid to block
+                    playGrid.style.padding = '8px';
+                    playGrid.style.width = '100%';
+                }
+                
+                // Style each card individually
+                playCards.forEach(card => {
+                    // Full width card
+                    card.style.width = '100%';
+                    card.style.maxWidth = 'none';
+                    card.style.margin = '0 0 12px 0';
+                    card.style.borderRadius = '8px';
+                    card.style.overflow = 'hidden';
+                    card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                    
+                    // Get the image and content elements
+                    const img = card.querySelector('img');
+                    const content = card.querySelector('.play-card-content');
+                    
+                    // Style the image
+                    if (img) {
+                        img.style.width = '100%';
+                        img.style.height = '230px';
+                        img.style.objectFit = 'cover';
+                        img.style.objectPosition = 'center';
+                        img.style.margin = '0';
+                        img.style.borderRadius = '8px 8px 0 0';
+                    }
+                    
+                    // Style the content
+                    if (content) {
+                        content.style.padding = '0';
+                        
+                        // Style the heading
+                        const heading = content.querySelector('h3');
+                        if (heading) {
+                            heading.style.fontSize = '1.4rem';
+                            heading.style.lineHeight = '1.3';
+                            heading.style.fontWeight = '700';
+                            heading.style.padding = '12px 12px 8px 12px';
+                            heading.style.margin = '0';
+                        }
+                        
+                        // Style paragraphs
+                        const paragraphs = content.querySelectorAll('p');
+                        paragraphs.forEach(p => {
+                            p.style.fontSize = '0.95rem';
+                            p.style.lineHeight = '1.4';
+                            p.style.margin = '6px 0';
+                            p.style.padding = '0 12px';
+                        });
+                        
+                        // Add extra padding to last paragraph
+                        if (paragraphs.length > 0) {
+                            paragraphs[paragraphs.length - 1].style.paddingBottom = '12px';
+                        }
+                    }
+                });
+                
+                console.log("Mobile optimization applied");
+            }
+        }
+        
+        // Run on page load
+        document.addEventListener('DOMContentLoaded', optimizeMobileCards);
+        
+        // Run on window resize
+        window.addEventListener('resize', optimizeMobileCards);
+        
+        // Also run on any displayPlays call to catch dynamic content
+        const originalDisplayPlays = window.displayPlays;
+        if (typeof originalDisplayPlays === 'function') {
+            window.displayPlays = function() {
+                originalDisplayPlays.apply(this, arguments);
+                setTimeout(optimizeMobileCards, 100); // Short delay to let DOM update
+            };
+        }
+        
+        // Run immediately in case DOM is already loaded
+        optimizeMobileCards();
     </script>
 </body>
 </html> 
