@@ -798,6 +798,48 @@ function setupFormHandlers() {
             resetForm();  // Use new reset function
             hideAddPlayForm();
             displayPlays('all');
+
+            try {
+                // Format date for display
+                const formattedDate = new Date(formData.date).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric', 
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                // Format rating for display
+                let displayRating = 'Not Rated';
+                if (formData.rating) {
+                    if (formData.rating === 'Standing Ovation' || formData.rating === 6) {
+                        displayRating = 'Standing Ovation';
+                    } else {
+                        const ratingValue = typeof formData.rating === 'string' ? 
+                            parseFloat(formData.rating) : formData.rating;
+                        
+                        if (!isNaN(ratingValue)) {
+                            displayRating = `${ratingValue} ${ratingValue === 1 ? 'Moon' : 'Moons'}`;
+                        }
+                    }
+                }
+                
+                // Show enhanced toast with play details
+                showToast({
+                    title: 'Play Added Successfully',
+                    message: `"${formData.name}" has been added to your collection!`,
+                    type: 'success',
+                    duration: 5000,
+                    details: {
+                        'Play': formData.name,
+                        'Date': formattedDate,
+                        'Theatre': formData.theatre || 'Not specified',
+                        'Rating': displayRating,
+                        'Image': formData.image ? 'Yes' : 'No'
+                    }
+                });
+            } catch (toastError) {
+                console.error('Error showing toast:', toastError);
+            }
         } catch (error) {
             console.error('Error adding play:', error);
             alert('Error adding play: ' + error.message);

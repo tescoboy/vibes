@@ -15,7 +15,7 @@ function showAddPlayForm() {
     playGrid.innerHTML = `
         <div class="add-play-container">
             <h2>Add New Play</h2>
-            <form id="addPlayForm" onsubmit="handleAddPlay(event)">
+            <form id="addPlayForm" onsubmit="handleAddPlay(event); console.log('Form submitted via onsubmit')">
                 <div class="form-group required">
                     <label for="playName">Play Name</label>
                     <input type="text" id="playName" name="playName" required>
@@ -162,30 +162,140 @@ function showAddPlayForm() {
 }
 
 async function handleAddPlay(event) {
+    console.log('🔍 handleAddPlay triggered');
     event.preventDefault();
     
     const formData = {
         name: document.getElementById('playName').value,
         date: document.getElementById('playDate').value,
         theatre: document.getElementById('playTheatre').value || null,
-        rating: document.getElementById('playRating').value ? parseFloat(document.getElementById('playRating').value) : null
+        rating: document.getElementById('ratingValue').value ? parseFloat(document.getElementById('ratingValue').value) : null
     };
+    
+    console.log('📋 Form data collected:', formData);
 
     try {
+        console.log('🔄 Attempting to insert play into database...');
         const { data, error } = await supabase
             .from('plays')
             .insert([formData]);
 
         if (error) {
-            console.error('Supabase error:', error);
+            console.error('❌ Supabase error:', error);
             throw error;
         }
 
-        // Show success message and redirect to all plays
+        console.log('✅ Play added successfully to database!');
+        
+        // Format date for display
+        const formattedDate = new Date(formData.date).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        console.log('📅 Formatted date:', formattedDate);
+
+        // Format rating for display
+        let displayRating = 'Not Rated';
+        if (formData.rating && formData.rating !== '') {
+            displayRating = formData.rating === 'Standing Ovation' 
+                ? 'Standing Ovation' 
+                : `${formData.rating} ${formData.rating === '1' ? 'Moon' : 'Moons'}`;
+        }
+        console.log('⭐ Formatted rating:', displayRating);
+
+        // Show success toast
+        console.log('🍞 Attempting to show toast notification...');
+        console.log('🧪 Testing if showToast exists:', typeof showToast);
+        
+        try {
+            showToast({
+                title: 'Play Added',
+                message: `${formData.name} has been added to your collection!`,
+                type: 'success',
+                duration: 6000,
+                details: {
+                    'Play': formData.name,
+                    'Date': formattedDate,
+                    'Theatre': formData.theatre || 'Not specified',
+                    'Rating': displayRating
+                }
+            });
+            console.log('🎉 Toast notification successfully triggered!');
+        } catch (toastError) {
+            console.error('❌ Error showing toast:', toastError);
+        }
+
+        // Show traditional alert as fallback
         alert('Play added successfully!');
+        
+        // Reset and close form
+        console.log('🧹 Resetting form and redirecting...');
+        document.getElementById('addPlayForm').reset();
+        document.getElementById('ratingValue').value = '';
+        hideAddPlayForm();
         displayPlays('all');
+        
     } catch (error) {
-        console.error('Error adding play:', error);
+        console.error('❌ Error in handleAddPlay:', error);
         alert(`Error adding play: ${error.message}`);
     }
-} 
+}
+
+// Make sure this event handler isn't causing conflict
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 DOM Content Loaded - Setting up form handlers');
+    
+    // Create a simple test function in global scope
+    window.testToastFunction = function() {
+        console.log('🧪 Test toast function called');
+        
+        if (typeof showToast === 'function') {
+            console.log('✅ showToast is a function');
+            showToast({
+                title: 'Test Toast',
+                message: 'This is a test notification',
+                type: 'info',
+                duration: 3000
+            });
+        } else {
+            console.error('❌ showToast is not a function. Type:', typeof showToast);
+            alert('Toast function not available');
+        }
+    };
+    
+    // Add a global test button on the page
+    const globalTestBtn = document.createElement('button');
+    globalTestBtn.textContent = 'Test Global Toast';
+    globalTestBtn.style.position = 'fixed';
+    globalTestBtn.style.bottom = '10px';
+    globalTestBtn.style.left = '10px';
+    globalTestBtn.style.zIndex = '9999';
+    globalTestBtn.style.padding = '10px';
+    globalTestBtn.style.background = '#ff9800';
+    globalTestBtn.style.color = 'white';
+    globalTestBtn.style.border = 'none';
+    globalTestBtn.style.borderRadius = '4px';
+    globalTestBtn.onclick = window.testToastFunction;
+    document.body.appendChild(globalTestBtn);
+    
+    // Get the form element and check if it exists
+    const addPlayForm = document.getElementById('addPlayForm');
+    console.log('📝 Add Play Form found?', !!addPlayForm);
+    
+    if (addPlayForm) {
+        console.log('🔄 Adding submit event listener to form');
+        
+        // Verify current handlers
+        const existingHandlers = addPlayForm.getAttribute('onsubmit');
+        console.log('ℹ️ Existing form onsubmit:', existingHandlers);
+        
+        // Add submit event listener
+        addPlayForm.addEventListener('submit', function(event) {
+            console.log('📢 Form submit event triggered');
+            handleAddPlay(event);
+        });
+    }
+}); 
